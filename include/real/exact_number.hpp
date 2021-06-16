@@ -1884,12 +1884,12 @@ namespace boost {
              * normalized representation.
              */
             void normalize() {
-                int zeros_on_left=0;
-                for(int i=0;i<(int)this->digits.size() && this->digits[i]==0;++i){
-                    ++zeros_on_left;
+                int zeroes_on_left = 0;
+                for(int i = 0; i < (int)this->digits.size() - 1 && this->digits[i] == 0; i++) {
+                    zeroes_on_left++;
                 }
-                exponent-=zeros_on_left;
-                this->digits.erase(this->digits.begin(),this->digits.begin()+zeros_on_left);
+                this->exponent -= zeroes_on_left;
+                this->digits.erase(this->digits.begin(), this->digits.begin() + zeroes_on_left);
 
                 while (this->digits.size() > 1 && this->digits.back() == 0) {
                     this->digits.pop_back();
@@ -1907,12 +1907,12 @@ namespace boost {
              * into a semi normalized representation.
              */
             void normalize_left() {
-                int zeros_on_left=0;
-                for(int i=0;i<(int)this->digits.size() && this->digits[i]==0;++i){
-                    if(this->digits[i]!=0)   break;
-                    else ++zeros_on_left;
+                int zeroes_on_left = 0;
+                for(int i = 0; i < (int)this->digits.size() - 1 && this->digits[i] == 0; i++) {
+                    zeroes_on_left++;
                 }
-                this->digits.erase(this->digits.begin(),this->digits.begin()+zeros_on_left);
+                this->exponent -= zeroes_on_left;
+                this->digits.erase(this->digits.begin(), this->digits.begin() + zeroes_on_left);
             }
 
             /**
