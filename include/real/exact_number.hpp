@@ -95,12 +95,15 @@ namespace boost {
                         carry = 1;
                         digit = 0;
                     }
-                    temp.insert(temp.begin(), digit);
+                    // adding digit at end now, later we reverse the digits
+                    temp.push_back(digit);
                 }
                 if (carry == 1) {
-                    temp.insert(temp.begin(), 1);
+                    temp.push_back(1);
                     integral_length++;
                 }
+                // reversing the digits
+                std::reverse(temp.begin(), temp.end());
                 this->digits = temp;
                 this->exponent = integral_length;
                 this->normalize();
@@ -140,9 +143,12 @@ namespace boost {
                             digit = lhs_digit - rhs_digit;
                         }
 
-                    }                    
-                    result.insert(result.begin(), digit);
+                    } 
+                    // adding digit at end now, later we reverse the digits               
+                    result.push_back(digit);
                 }
+                // reversing the digits
+                std::reverse(result.begin(), result.end());
                 this->digits = result;
                 this->exponent = integral_length;
                 this->normalize();
@@ -156,11 +162,32 @@ namespace boost {
                 while (b > 0) 
                 { 
                     // If b is odd, add 'a' to result 
-                    if (b % 2 == 1) 
-                        res = (res + a) % mod; 
+                    if (b % 2 == 1) {
+                        res = res % mod;
+                        a = a % mod;
+                        if(res < (mod - a)) {
+                            res = res + a;
+                        }
+                        else {
+                            T min = std::min(res, a);
+                            T max = std::max(res, a);
+                            if (min <= (mod - 1) / 2) {
+                                T remaining = (mod - 1) / 2 - min;
+                                res = (max - mod / 2) - remaining - 1;
+                            } else {
+                                res = (min - (mod - 1) / 2) + (max - mod / 2) - 1;
+                            }
+                        }
+                    }
             
                     // Multiply 'a' with 2 
-                    a = (a * 2) % mod; 
+                    a = a % mod;
+                    if(a < mod / 2) {
+                        a = a * 2;
+                    }
+                    else {
+                        a = (a - mod / 2) + (a - (mod - 1) / 2) - 1;
+                    }  
             
                     // Divide b by 2 
                     b /= 2; 
@@ -178,16 +205,28 @@ namespace boost {
                 // a < c, rem < c.
                 while (b != 0) {
                     if (b & 1) {
-                        rem += a;
-                        if (rem >= c) {
-                            rem -= c;
+                        if(rem < (c - a)) {
+                            rem += a;
+                        }
+                        else {
+                            T min = std::min(rem, a);
+                            T max = std::max(rem, a);
+                            if (min <= (c - 1) / 2) {
+                                T remaining = (c - 1) / 2 - min;
+                                rem = (max - c / 2) - remaining - 1;
+                            } else {
+                                rem = (min - (c - 1) / 2) + (max - c / 2) - 1;
+                            }
                             res++;
                         }
                     }
                     b /= 2;
-                    a *= 2;
-                    if (a >= c) {
-                        a -= c;
+
+                    if(a < c / 2) {
+                        a *= 2;
+                    }
+                    else {
+                        a = (a - c / 2) + (a - (c - 1) / 2) - 1;
                         res += b;
                     }
                 }
