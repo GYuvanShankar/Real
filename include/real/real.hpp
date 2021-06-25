@@ -87,6 +87,11 @@ namespace boost {
             // number of nodes in Real tree at last optimization
             int prev_num_nodes = 0;
 
+            // indicates whether we use the information of previous optimization
+            bool use_prev = false;
+            // info of the top node at last optimization, used when use_prev is true
+            std::pair<std::shared_ptr<real_data<T>>, std::map<std::shared_ptr<real_data<T>>, int>> prev_top;
+
         public:
             /// @TODO: Move constructors to move directly from the ctors in real_explicit to the values in real_data
             /// @TODO: do we need different ctors to be more efficient? rvalue AND lvalue ref?
@@ -702,56 +707,107 @@ namespace boost {
 
             // returns map of the real number and its occurences in the subtree
             std::map<std::shared_ptr<real_data<T>>, int> optimize_traversal(std::shared_ptr<real_data<T>> real_p, bool top) { 
-                std::map<std::shared_ptr<real_data<T>>, int> count;
+                std::map<std::shared_ptr<real_data<T>>, int> count; 
 
                 std::visit( overloaded {
-                    [&real_p, &count] (const real_explicit<T>& real) { 
-                        count[real_p]++;  
+                    [&real_p, top, &count, this] (const real_explicit<T>& real) { 
+                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                            // if found previous top node, use its map
+                            count = this->prev_top.second;
+                        }
+                        else
+                        {
+                            count[real_p]++; 
+                            if (top) {
+                                this->_real_p = real_p;
+                                this->use_prev = false;
+                            }
+                        } 
                     },
-                    [&real_p, &count] (const real_algorithm<T>& real) {
-                        count[real_p]++;  
+                    [&real_p, top, &count, this] (const real_algorithm<T>& real) {
+                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                            // if found previous top node, use its map
+                            count = this->prev_top.second;
+                        }
+                        else
+                        {
+                            count[real_p]++;  
+                            if (top) {
+                                this->_real_p = real_p;
+                                this->use_prev = false;
+                            }
+                        }
                     },
                     [&real_p, top, &count, this] (const real_operation<T>& real) { 
-                        auto count_lhs = optimize_traversal(real.lhs(), false);
-                        auto count_rhs = optimize_traversal(real.rhs(), false);
-                        
-                        if (real.get_operation() == OPERATION::ADDITION) { 
-                            count = count_lhs;
-                            for (auto x: count_rhs) {
-                                count[x.first] += x.second;
-                            }
+                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                            // if found previous top node, use its map
+                            count = this->prev_top.second; 
+                        }
+                        else {
+                            auto count_lhs = optimize_traversal(real.lhs(), false);
+                            auto count_rhs = optimize_traversal(real.rhs(), false);
+                            
+                            if (real.get_operation() == OPERATION::ADDITION) { 
+                                count = count_lhs;
+                                for (auto x: count_rhs) {
+                                    count[x.first] += x.second;
+                                }
 
-                            if (top) { 
-                                real_p = simplify(count);
-                                count.clear();
+                                if (top) { 
+                                    real_p = simplify(count);
+                                    this->_real_p = real_p;
+
+                                    // we can use this information for further optimization
+                                    this->use_prev = true;
+                                    // For next optimize() call, we need the count map before its simplification
+                                    this->prev_top = make_pair(this->_real_p, count);
+                                }
+                            }
+                            else if (real.get_operation() == OPERATION::SUBTRACTION) {
+                                count = count_lhs;
+                                for (auto x: count_rhs) {
+                                    count[x.first] -= x.second;
+                                }
+
+                                if (top) {
+                                    real_p = simplify(count);
+                                    this->_real_p = real_p;
+
+                                    // we can use this information for further optimization
+                                    this->use_prev = true;
+                                    // For next optimize() call, we need the count map before its simplification
+                                    this->prev_top = make_pair(this->_real_p, count);
+                                }
+                            }
+                            else 
+                            {
+                                // if operation is other than addition or subtraction, we have to simplify its left and right subtree
+                                std::shared_ptr<real_data<T>> lhs_p = simplify(count_lhs);
+                                std::shared_ptr<real_data<T>> rhs_p = simplify(count_rhs);
+                                real_p = std::make_shared<real_data<T>>(real_operation(lhs_p, rhs_p, real.get_operation()));
                                 count[real_p]++;
-                                this->_real_p = real_p;
+
+                                if (top) {
+                                    this->_real_p = real_p;
+                                    // we can't use the information beneath this node for next optimize() call
+                                    this->use_prev = false;
+                                }
                             }
                         }
-                        else if (real.get_operation() == OPERATION::SUBTRACTION) {
-                            count = count_lhs;
-                            for (auto x: count_rhs) {
-                                count[x.first] -= x.second;
-                            }
-
-                            if (top) {
-                                real_p = simplify(count);
-                                count.clear();
-                                count[real_p]++;
-                                this->_real_p = real_p;
-                            }
+                    },
+                    [&real_p, top, &count, this] (const real_rational<T>& real) { 
+                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                            // if found previous top node, use its map
+                            count = this->prev_top.second;
                         }
-                        else 
+                        else
                         {
-                            // if operation is other than addition or subtraction, we have to simplify its left and right subtree
-                            std::shared_ptr<real_data<T>> lhs_p = simplify(count_lhs);
-                            std::shared_ptr<real_data<T>> rhs_p = simplify(count_rhs);
-                            real_p = std::make_shared<real_data<T>>(real_operation(lhs_p, rhs_p, real.get_operation()));
-                            count[real_p]++;
+                            count[real_p]++; 
                             if (top) {
                                 this->_real_p = real_p;
+                                this->use_prev = false;
                             }
-                        }
+                        } 
                     },
                     [] (auto& real) {
                         throw boost::real::bad_variant_access_exception();
@@ -773,7 +829,7 @@ namespace boost {
             }
 
             // Checks if we have to optimize the Real
-            void check_if_optimize() {
+            void check_if_optimize() { 
                 if (this->optimize_freq != -1 && this->num_nodes >= this->prev_num_nodes + this->optimize_freq) {
                     this->optimize();
                     this->prev_num_nodes = this->num_nodes;
@@ -797,6 +853,9 @@ namespace boost {
                         int ret_lhs = find_num_nodes_traversal(real.lhs());
                         int ret_rhs = find_num_nodes_traversal(real.rhs());
                         ret = ret_lhs + ret_rhs;
+                    },
+                    [&ret] (const real_rational<T>& real) {
+                        ret = 1;
                     },
                     [] (auto& real) {
                         throw boost::real::bad_variant_access_exception();
