@@ -82,10 +82,8 @@ namespace boost {
             // -1 denotes no optimization
             int optimize_freq = -1;
 
-            // number of nodes in Real tree currently
+            // number of nodes added in Real tree after previous optimization
             int num_nodes = 0;
-            // number of nodes in Real tree at last optimization
-            int prev_num_nodes = 0;
 
             // indicates whether we use the information of previous optimization
             bool use_prev = false;
@@ -668,6 +666,27 @@ namespace boost {
                 bool first = true;
                 std::shared_ptr<real_data<T>> ret;
 
+                bool has_positive_node = false;
+                // pointer having postive number of occurences
+                std::shared_ptr<real_data<T>> positive;
+
+                for (auto x: count) {
+                    if (x.second > 0) {
+                        if (x.second == 1) {
+                            ret = x.first;
+                        }
+                        else {
+                            std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
+                            std::shared_ptr<real_data<T>> num = x.first;
+                            ret = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                        }
+                        positive = x.first;
+                        has_positive_node = true;
+                        first = false;
+                        break;
+                    }
+                }
+
                 for (auto x: count) {  
                     if (x.second == 0) continue;
 
@@ -683,16 +702,33 @@ namespace boost {
                         first = false;
                     }
                     else {
-                        std::shared_ptr<real_data<T>> mul_node;
-                        if (x.second == 1) {
-                            mul_node = x.first;
+                        if (has_positive_node && x.first == positive) continue;
+                        if (x.second > 0) {
+                            // if no. of times it occurs is positive, we join with + operation
+                            std::shared_ptr<real_data<T>> mul_node;
+                            if (x.second == 1) {
+                                mul_node = x.first;
+                            }
+                            else {
+                                std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
+                                std::shared_ptr<real_data<T>> num = x.first;
+                                mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                            }
+                            ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::ADDITION));
                         }
                         else {
-                            std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
-                            std::shared_ptr<real_data<T>> num = x.first;
-                            mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                            // if no. of times it occurs is negative, we join with - operation
+                            std::shared_ptr<real_data<T>> mul_node;
+                            if (x.second == -1) {
+                                mul_node = x.first;
+                            }
+                            else {
+                                std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(-x.second)));
+                                std::shared_ptr<real_data<T>> num = x.first;
+                                mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                            }
+                            ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::SUBTRACTION));
                         }
-                        ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::ADDITION));
                     }
                 }
 
@@ -820,19 +856,19 @@ namespace boost {
             // optimizes the dag, converts it into a simplified smaller dag 
             void optimize() {
                 optimize_traversal(this->_real_p, true);
-                this->num_nodes = this->find_num_nodes();
             }
 
             // sets optimize_freq 
-            void set_optimize_freq(int freq) {
+            void set_optimize_freq(int freq) { 
                 this->optimize_freq = freq;
+                this->check_if_optimize();
             }
 
             // Checks if we have to optimize the Real
             void check_if_optimize() { 
-                if (this->optimize_freq != -1 && this->num_nodes >= this->prev_num_nodes + this->optimize_freq) {
+                if (this->optimize_freq != -1 && this->num_nodes >= this->optimize_freq) {
                     this->optimize();
-                    this->prev_num_nodes = this->num_nodes;
+                    this->num_nodes = 0;
                 }
             }
 
