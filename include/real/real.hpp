@@ -490,8 +490,6 @@ namespace boost {
 
                             if(assign_and_return_void) {
                                 this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION));
-                                this->num_nodes = a_op_b.num_nodes + real(x).num_nodes;
-                                this->check_if_optimize();
                                 return std::make_pair(true, std::nullopt);
                             } else {
                                 return std::make_pair(true, real(real_operation<T>(a_op_b._real_p, x, OPERATION::MULTIPLICATION)));
@@ -541,8 +539,6 @@ namespace boost {
 
                             if(assign_and_return_void) {
                                 this->_real_p = std::make_shared<real_data<T>>(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
-                                this->num_nodes = x_op_1.num_nodes + real(a).num_nodes;
-                                this->check_if_optimize();
                                 return std::make_pair(true, std::nullopt);
                             } else {
                                 return std::make_pair(true, real(real_operation<T>(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
@@ -593,8 +589,6 @@ namespace boost {
 
                         if(assign_and_return_void) {
                             this->_real_p = std::make_shared<real_data<T>>(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION));
-                            this->num_nodes = x_op_1.num_nodes + real(a).num_nodes;
-                            this->check_if_optimize();
                             return std::make_pair(true, std::nullopt);
                         } else {
                             return std::make_pair(true, real(real_operation(x_op_1._real_p, a, OPERATION::MULTIPLICATION)));
@@ -606,8 +600,6 @@ namespace boost {
 
                         if(assign_and_return_void) {
                             this->_real_p = std::make_shared<real_data<T>>(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION));
-                            this->num_nodes += 1;
-                            this->check_if_optimize();
                             return std::make_pair(true, std::nullopt);
                         } else {
                             return std::make_pair(true, real(real_operation(two, this->_real_p, OPERATION::MULTIPLICATION)));
@@ -1136,9 +1128,9 @@ namespace boost {
                         if(!is_simplified){
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::ADDITION));
-                            this->num_nodes += other.num_nodes;
-                            this->check_if_optimize();
                         }
+                        this->num_nodes += other.num_nodes;
+                        this->check_if_optimize();
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1166,8 +1158,8 @@ namespace boost {
                         if(!is_simplified){
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p,rat_num._real_p, OPERATION::ADDITION));
-                            this->check_if_optimize();
                         }
+                        this->check_if_optimize();
 
                     },
 
@@ -1177,9 +1169,9 @@ namespace boost {
                         if (!is_simplified) {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::ADDITION));
-                            this->num_nodes += other.num_nodes;
-                            this->check_if_optimize();
                         }
+                        this->num_nodes += other.num_nodes;
+                        this->check_if_optimize();
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
             }
@@ -1197,7 +1189,6 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a+b));
-                        result.num_nodes = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1309,9 +1300,9 @@ namespace boost {
                         if(!is_simplified){
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::SUBTRACTION));
-                            this->num_nodes += other.num_nodes;
-                            this->check_if_optimize();
                         }
+                        this->num_nodes += other.num_nodes;
+                        this->check_if_optimize();
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1339,8 +1330,8 @@ namespace boost {
                         if(!is_simplified){
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p,rat_num._real_p, OPERATION::SUBTRACTION));
-                            this->check_if_optimize();
                         }
+                        this->check_if_optimize();
 
                     },
 
@@ -1350,9 +1341,9 @@ namespace boost {
                         if(!is_simplified) {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::SUBTRACTION));
-                            this->num_nodes += other.num_nodes;
-                            this->check_if_optimize();
                         }
+                        this->num_nodes += other.num_nodes;
+                        this->check_if_optimize();
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
                 
@@ -1371,7 +1362,6 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a-b));
-                        result.num_nodes = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1536,7 +1526,6 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a*b));
-                        result.num_nodes = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1610,7 +1599,6 @@ namespace boost {
                         real_rational<T> result1 = a/b;
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational(result1));
-                        result.num_nodes = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
