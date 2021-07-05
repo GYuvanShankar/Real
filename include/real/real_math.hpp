@@ -17,7 +17,7 @@ namespace boost{
 		 * @author: Vikram Singh Chundawat
 		 **/
 		template<typename T>
-		exact_number<T> exponent(exact_number<T> num, size_t max_error_exponent, bool upper){
+		exact_number<T> exponent_taylor(exact_number<T> num, size_t max_error_exponent, bool upper){
 			exact_number<T> result("1");
 			exact_number<T> term_number("1");
 			exact_number<T> factorial("1");
@@ -36,6 +36,22 @@ namespace boost{
 			return result;
 		}
 
+        template<typename T>
+        exact_number<T> exponent(exact_number<T> num, size_t max_error_exponent, bool upper) { 
+            if (num >= literals::minus_one_exact<T> && num <= literals::one_exact<T>) {
+                return exponent_taylor(num, max_error_exponent, upper);
+            }
+
+            exact_number<T> half_num = num;
+            half_num.divide_vector(literals::two_exact<T>, max_error_exponent, upper);
+
+            exact_number<T> result;
+            result = exponent(half_num, max_error_exponent, upper);
+            result *= result;
+            result = result.up_to(max_error_exponent, upper);
+            return result;
+        }
+
 		/**
 		 *  LOGARITHM(BASE e) FUNCTION USING TAYLOR EXPANSION
 		 * @brief: calculates log(base e) of a exact_number using taylor expansion
@@ -46,12 +62,8 @@ namespace boost{
 		 * @author: Vikram Singh Chundawat
 		 **/
 		template<typename T>
-		exact_number<T> logarithm(exact_number<T> x, size_t max_error_exponent, bool upper){
-			// log is only defined for numbers greater than 0
+		exact_number<T> logarithm_taylor(exact_number<T> x, size_t max_error_exponent, bool upper){
 			static const exact_number<T> two("2");
-			if(x == literals::zero_exact<T> || x.positive == false){
-				throw logarithm_not_defined_for_non_positive_number();
-			}
 			exact_number<T> result("0");
 			exact_number<T> term_number("1");
 			unsigned int term_number_int = 1;
@@ -86,6 +98,46 @@ namespace boost{
 			result = result.up_to(max_error_exponent, upper);
 			return result;
 		}
+
+        template<typename T>
+        exact_number<T> log_two;
+        
+        template<typename T>
+		exact_number<T> logarithm_recurse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x <= literals::four_exact<T>) {
+                return logarithm_taylor(x, max_error_exponent, upper);
+            }
+
+            exact_number<T> half_x = x;
+            half_x.divide_vector(literals::two_exact<T>, max_error_exponent, upper);
+
+            exact_number<T> result = logarithm_recurse(half_x, max_error_exponent, upper);
+            result += log_two<T>;
+            result = result.up_to(max_error_exponent, upper);
+            return result;
+        }
+
+        template<typename T>
+		exact_number<T> logarithm(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            // log is only defined for numbers greater than 0
+            if(x == literals::zero_exact<T> || x.positive == false){
+				throw logarithm_not_defined_for_non_positive_number();
+			}
+            
+            log_two<T> = logarithm_taylor(literals::two_exact<T>, max_error_exponent, upper);
+            exact_number<T> result;
+            if (x >= literals::one_exact<T>) {
+                result = logarithm_recurse(x, max_error_exponent, upper);
+            }
+            else {
+                exact_number<T> rev_x = literals::one_exact<T>;
+                exact_number<T> minus_one = literals::minus_one_exact<T>;
+                rev_x.divide_vector(x, max_error_exponent, upper);
+                result = minus_one * logarithm_recurse(rev_x, max_error_exponent, upper);
+            }
+            result = result.up_to(max_error_exponent, upper);
+            return result;
+        }
 
 		/**
 		 *  SINE FUNCTION USING TAYLOR EXPANSION
