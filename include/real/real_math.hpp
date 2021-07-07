@@ -31,6 +31,10 @@ namespace boost{
 				x_pow *= num;
 				cur_term = x_pow;
 				cur_term.divide_vector(factorial, max_error_exponent, upper);
+
+                result.up_to(max_error_exponent, upper);
+                factorial.up_to(max_error_exponent, upper);
+                x_pow.up_to(max_error_exponent, upper);
 			}while(cur_term.abs() > max_error);
 			result = result.up_to(max_error_exponent, upper);
 			return result;
@@ -82,6 +86,9 @@ namespace boost{
 					cur_term.divide_vector(term_number, max_error_exponent, upper);
 					++term_number_int;
 					term_number = term_number + literals::one_exact<T>;
+
+                    result.up_to(max_error_exponent, upper);
+                    x_pow.up_to(max_error_exponent, upper);
 				}while(cur_term.abs() > max_error);
 				return result;
 			}
@@ -94,6 +101,9 @@ namespace boost{
 				cur_term.divide_vector(term_number, max_error_exponent, upper);
 				++term_number_int;
 				term_number = term_number + literals::one_exact<T>;
+
+                result.up_to(max_error_exponent, upper);
+                x_pow.up_to(max_error_exponent, upper);
 			}while(cur_term.abs() > max_error);
 			result = result.up_to(max_error_exponent, upper);
 			return result;
@@ -173,6 +183,10 @@ namespace boost{
 				factorial = factorial * ( two * term_number) * ( (two * term_number) + literals::one_exact<T>); // increasing the values of factorial by two
 				cur_term  = x_pow;
 				cur_term.divide_vector(factorial, max_error_exponent, upper);
+                
+                result = result.up_to(max_error_exponent, upper);
+                factorial = factorial.up_to(max_error_exponent, upper);
+                x_pow = x_pow.up_to(max_error_exponent, upper);
 			}while(cur_term.abs() > max_error);
 			result = result.up_to(max_error_exponent, upper);
 			return result;
@@ -212,7 +226,10 @@ namespace boost{
 				cur_term.divide_vector(factorial, max_error_exponent, upper);
 				++ term_number_int;
 				term_number = term_number + literals::one_exact<T>;
-				
+
+				result.up_to(max_error_exponent, upper);
+                factorial.up_to(max_error_exponent, upper);
+                cur_power.up_to(max_error_exponent, upper);
 			}while(cur_term.abs() > max_error);
 			result = result.up_to(max_error_exponent, upper);
 			return result;
