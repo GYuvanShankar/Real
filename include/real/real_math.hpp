@@ -4,6 +4,7 @@
 #include <tuple>
 #include "real/exact_number.hpp"
 #include "real/real_exception.hpp"
+#include "real/irrational_helpers.hpp"
 
 namespace boost{
 	namespace real{
@@ -40,6 +41,16 @@ namespace boost{
 			return result;
 		}
 
+        /**
+		 *  EXPONENT FUNCTION USING BINARY EXPONENTIATION AND TAYLOR EXPANSION
+		 * @brief: calculates exponent of a exact_number using binary exponentiation
+         *  When num is sufficiently small, taylor expansion is used
+		 * @param: num: the exact number. whose exponent is to be found
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
         template<typename T>
         exact_number<T> exponent(exact_number<T> num, size_t max_error_exponent, bool upper) { 
             if (num >= literals::minus_one_exact<T> && num <= literals::one_exact<T>) {
@@ -127,6 +138,16 @@ namespace boost{
             return result;
         }
 
+        /**
+		 *  LOGARITHM(BASE e) FUNCTION USING RECURSION AND TAYLOR EXPANSION
+		 * @brief: calculates log(base e) of a exact_number using recursion
+         * When x is sufficiently small, taylor expansion is used
+		 * @param: x: the exact number. whose logarithm (ln(x)) is to be found
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
         template<typename T>
 		exact_number<T> logarithm(exact_number<T> x, size_t max_error_exponent, bool upper) {
             // log is only defined for numbers greater than 0
@@ -140,6 +161,7 @@ namespace boost{
                 result = logarithm_recurse(x, max_error_exponent, upper);
             }
             else {
+                // converting x to > 1
                 exact_number<T> rev_x = literals::one_exact<T>;
                 exact_number<T> minus_one = literals::minus_one_exact<T>;
                 rev_x.divide_vector(x, max_error_exponent, upper);
@@ -159,7 +181,7 @@ namespace boost{
 		 * @author: Vikram Singh Chundawat
 		 **/
 		template<typename T>
-		exact_number<T> sine(exact_number<T> x, size_t max_error_exponent, bool upper){
+		exact_number<T> sine_taylor(exact_number<T> x, size_t max_error_exponent, bool upper){
 			exact_number<T> result("0");
 			exact_number<T> term_number("0");
 			unsigned int term_number_int = 0;
@@ -192,6 +214,32 @@ namespace boost{
 			return result;
 		}
 
+        /**
+		 *  SINE FUNCTION USING ARGUMENT REDUCTION AND TAYLOR EXPANSION
+		 * @brief: calculates sin(x) of a exact_number using argument reduction
+         *  After reduction, taylor expansion is used
+		 * @param: x: the exact_number, representing angle in radian
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+		exact_number<T> sine(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            exact_number<T> k = x;
+            exact_number<T> red_x = x;
+            static exact_number<T> two("2");
+
+            k.divide_vector(two, max_error_exponent, upper);
+            k.divide_vector(boost::real::irrational::exact_pi<T>(max_error_exponent), max_error_exponent, upper);
+            k.floor();
+
+            k = k * two * boost::real::irrational::exact_pi<T>(max_error_exponent); 
+            red_x -= k;
+
+            return sine_taylor(red_x, max_error_exponent, upper);
+        }
+
 		/**
 		 *  COSINE FUNCTION USING TAYLOR EXPANSION
 		 * @brief: calculates cos(x) of a exact_number using taylor expansion
@@ -202,7 +250,7 @@ namespace boost{
 		 * @author: Vikram Singh Chundawat
 		 **/
 		template<typename T>
-		exact_number<T> cosine(exact_number<T> x, size_t max_error_exponent, bool upper){
+		exact_number<T> cosine_taylor(exact_number<T> x, size_t max_error_exponent, bool upper){
 			exact_number<T> result("1");
 			exact_number<T> cur_term("0");
 			exact_number<T> square_x = x*x;
@@ -235,6 +283,32 @@ namespace boost{
 			return result;
 		}
 
+        /**
+		 *  COSINE FUNCTION USING ARGUMENT REDUCTION AND TAYLOR EXPANSION
+		 * @brief: calculates cos(x) of a exact_number using argument reduction
+         * After reduction, taylor expansion is used
+		 * @param: x: the exact_number, representing angle in radian
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+		exact_number<T> cosine(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            exact_number<T> k = x;
+            exact_number<T> red_x = x;
+            static exact_number<T> two("2");
+
+            k.divide_vector(two, max_error_exponent, upper);
+            k.divide_vector(boost::real::irrational::exact_pi<T>(max_error_exponent), max_error_exponent, upper);
+            k.floor();
+
+            k = k * two * boost::real::irrational::exact_pi<T>(max_error_exponent); 
+            red_x -= k;
+
+            return cosine_taylor(red_x, max_error_exponent, upper);
+        }
+
 		 
 		 /**
 		 *  SINE AND COSINE FUNCTION USING TAYLOR EXPANSION
@@ -247,7 +321,7 @@ namespace boost{
 		 * @author: Vikram Singh Chundawat
 		 **/
 		template<typename T>
-		std::tuple<exact_number<T>, exact_number<T> > sin_cos(exact_number<T> x, size_t max_error_exponent, bool upper){
+		std::tuple<exact_number<T>, exact_number<T> > sin_cos_taylor(exact_number<T> x, size_t max_error_exponent, bool upper){
 			exact_number<T> sin_result("0");
 			exact_number<T> cos_result("0");
 			exact_number<T> cur_sin_term = x;
@@ -284,6 +358,33 @@ namespace boost{
 
 			return std::make_tuple(sin_result, cos_result);
 		}
+
+        /**
+		 *  SINE AND COSINE FUNCTION USING ARGUMENT REDUCTION AND TAYLOR EXPANSION
+		 * @brief: calculates cos(x) and sin(x) of a exact_number using argument reduction
+         * After reduction, taylor expansion is used
+		 * @param: x: the exact_number, representing angle in radian
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @return: a tuple containing sin(x) and cos(x)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+		std::tuple<exact_number<T>, exact_number<T> > sin_cos(exact_number<T> x, size_t max_error_exponent, bool upper){
+            exact_number<T> k = x;
+            exact_number<T> red_x = x;
+            static exact_number<T> two("2");
+
+            k.divide_vector(two, max_error_exponent, upper);
+            k.divide_vector(boost::real::irrational::exact_pi<T>(max_error_exponent), max_error_exponent, upper);
+            k.floor();
+
+            k = k * two * boost::real::irrational::exact_pi<T>(max_error_exponent); 
+            red_x -= k;
+
+            return sin_cos_taylor(red_x, max_error_exponent, upper);
+        }
 
 		/**
 		 *  TANGENT FUNCTION USING TAYLOR EXPANSION

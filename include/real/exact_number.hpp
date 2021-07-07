@@ -1965,6 +1965,38 @@ namespace boost {
             bool is_integral() { 
                    return digits.size() <= (size_t) exponent;
             }
+            
+            /**
+             * @brief Finds the floor of this, i.e. greatest integer smaller than this.
+             */
+            void floor() {
+                if (this->positive) {
+                    if (this->exponent < 0) {
+                        this->digits.clear();
+                        this->digits.push_back(0);
+                        this->exponent = 0;
+                    }
+                    else {
+                        while (this->digits.size() > this->exponent) {
+                            this->digits.pop_back();
+                        }
+                    }
+                }
+                else {
+                    if (this->exponent < 0) {
+                        this->digits.clear();
+                        this->digits.push_back(1);
+                        this->exponent = 1;
+                    }
+                    else {
+                        while (this->digits.size() > this->exponent) {
+                            this->digits.pop_back();
+                        }
+                        static exact_number<T> one_exact("1");
+                        this->add_vector(one_exact);
+                    }
+                }
+            }
 
         };
 
