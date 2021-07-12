@@ -5,7 +5,7 @@
 #include "real/exact_number.hpp"
 #include "real/real_exception.hpp"
 #include "real/irrational_helpers.hpp"
-
+#include <iostream>
 namespace boost{
 	namespace real{
 		/**
@@ -166,6 +166,53 @@ namespace boost{
                 exact_number<T> minus_one = literals::minus_one_exact<T>;
                 rev_x.divide_vector(x, max_error_exponent, upper);
                 result = minus_one * logarithm_recurse(rev_x, max_error_exponent, upper);
+            }
+            result = result.up_to(max_error_exponent, upper);
+            return result;
+        }
+
+        /**
+		 *  SQRT FUNCTION USING NEWTON'S METHOD
+		 * @brief: calculates square root of a exact_number using Newton's Method
+		 * @param: x: the exact number whose sqrt is to be found
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+		exact_number<T> sqrt(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            // sqrt is defined for non negative numbers
+            if (x.positive == false) {
+                throw sqrt_not_defined_for_negative_number();
+            }
+            if (x == literals::zero_exact<T>) {
+                return literals::zero_exact<T>;
+            }
+            
+            // initial guess
+            exact_number<T> result(x.digits, (x.exponent + 1)/2, true);
+
+            exact_number<T> error;
+            exact_number<T> max_error(std::vector<T> {1}, -max_error_exponent, true);
+            static exact_number<T> two("2");
+
+            // initial error
+            error = x - (result * result);
+            error = error.abs();
+            error.divide_vector(result, max_error_exponent, upper);
+
+            while (error > max_error) {
+                // result = (result + x / result) / 2
+                exact_number<T> reverse = x;
+                reverse.divide_vector(result, max_error_exponent, upper);
+                result = result + reverse;
+                result.divide_vector(two, max_error_exponent, upper); 
+
+                exact_number<T> temp;
+                temp = error * error;
+                temp.divide_vector((two * (error + literals::one_exact<T>)), max_error_exponent, upper);
+                error = temp;
             }
             result = result.up_to(max_error_exponent, upper);
             return result;
@@ -455,6 +502,277 @@ namespace boost{
 			result = result.up_to(max_error_exponent, upper);
 			return result;
 		}
+
+
+        /**
+		 *  INVERSE TANGENT FUNCTION USING TAYLOR EXPANSION
+		 * @brief: calculates tan_inverse(x) of a exact_number using taylor expansion
+		 * @param: x: the exact_number, x ∈ R
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> tan_inverse_taylor(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            exact_number<T> result("0");
+			exact_number<T> denominator("1");
+			unsigned int term_number_int = 0;
+			exact_number<T> cur_term(x);
+			exact_number<T> x_pow(x);
+			exact_number<T> x_square = x*x;
+			exact_number<T> max_error(std::vector<T> {1}, -max_error_exponent, true);
+			static exact_number<T> two("2");
+			
+			do{
+				if(term_number_int % 2 == 0){ // if this term is even
+					result += cur_term;
+				}
+				else 
+					result -= cur_term; // if this term is odd
+				++term_number_int;
+				x_pow *= x_square; // increasing power by two powers of original x
+				denominator += two;
+				cur_term  = x_pow;
+				cur_term.divide_vector(denominator, max_error_exponent, upper);
+                
+                result = result.up_to(max_error_exponent, upper);
+                x_pow = x_pow.up_to(max_error_exponent, upper);
+			}while(cur_term.abs() > max_error);
+			result = result.up_to(max_error_exponent, upper);
+			return result;
+        }
+
+        /**
+		 *  INVERSE TANGENT FUNCTION USING RECURSION AND TAYLOR EXPANSION
+		 * @brief: calculates tan_inverse(x) of a exact_number using recursion
+         * When x is sufficiently small, taylor expansion is used
+		 * @param: x: the exact_number, x ∈ R
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> tan_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            static exact_number<T> two("2");
+            exact_number<T> bar("1");
+            bar.divide_vector(two, max_error_exponent, upper); 
+            exact_number<T> neg_bar = bar;
+            neg_bar.positive = false;  
+            if (x > neg_bar && x < bar) {
+                // -0.5 < x < 0.5
+                return tan_inverse_taylor(x, max_error_exponent, upper);
+            }
+            
+            // atan(x) = 2 * atan(x / (1 + sqrt(1 + x^2)))
+            exact_number<T> red_x = x;
+            red_x.divide_vector(sqrt((x * x) + literals::one_exact<T>, max_error_exponent, upper) + literals::one_exact<T>, max_error_exponent, upper);
+            exact_number<T> result = tan_inverse(red_x, max_error_exponent, upper);
+            result = result + result;
+            result.up_to(max_error_exponent, upper);
+            return result;
+        }
+
+        /**
+		 *  INVERSE COTANGENT FUNCTION USING INVERSE TANGENT FUNCTION
+		 * @brief: calculates cot_inverse(x) of a exact_number using tan_inverse
+		 * @param: x: the exact_number, x ∈ R
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> cot_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x >= literals::one_exact<T>) {
+                // (1 / x) <= 1
+                // acot(x) = atan(1 / x)
+                exact_number<T> reciprocal("1");
+                reciprocal.divide_vector(x, max_error_exponent, upper);
+                return tan_inverse(reciprocal, max_error_exponent, upper);
+            }
+            else if (x <= literals::minus_one_exact<T>) {
+                // (1 / x) <= -1
+                // acot(x) = pi + atan(1 / x)
+                exact_number<T> reciprocal("1");
+                reciprocal.divide_vector(x, max_error_exponent, upper);
+                return tan_inverse(reciprocal, max_error_exponent, upper) + boost::real::irrational::exact_pi(max_error_exponent);
+            }
+            else { 
+                // -1 < x < 1
+                static exact_number<T> two("2");
+
+                // acot(x) = pi/2 - atan(x)
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.divide_vector(two, max_error_exponent, upper);
+                result = result - tan_inverse(x, max_error_exponent, upper);
+                result = result.up_to(max_error_exponent, upper);
+                return result;
+            }
+        }
+
+        /**
+		 *  INVERSE SINE FUNCTION USING INVERSE TANGENT FUNCTION
+		 * @brief: calculates sin_inverse(x) of a exact_number using tan_inverse
+		 * @param: x: the exact_number, x ∈ [-1, 1]
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> sin_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x < literals::minus_one_exact<T> || x > literals::one_exact<T>) {
+                throw max_precision_for_inverse_trigonometric_function_error();
+            }
+            
+            static exact_number<T> two("2");
+            if (x == literals::one_exact<T>) {
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.divide_vector(two, max_error_exponent, upper);
+                result = result.up_to(max_error_exponent, upper);
+                return result;
+            }
+            else if (x == literals::minus_one_exact<T>) {
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.positive = true;
+                result.divide_vector(two, max_error_exponent, upper);
+                result = result.up_to(max_error_exponent, upper);
+                return result;
+            }
+
+            // asin(x) = atan(x / sqrt(1 - x * x))
+            static exact_number<T> one("1");
+            exact_number<T> x_tan = x;
+            x_tan.divide_vector(sqrt(one - x * x, max_error_exponent, upper), max_error_exponent, upper);
+            return tan_inverse(x_tan, max_error_exponent, upper);
+        }
+
+        /**
+		 *  INVERSE COSINE FUNCTION USING INVERSE SINE FUNCTION
+		 * @brief: calculates cos_inverse(x) of a exact_number using sin_inverse
+		 * @param: x: the exact_number, x ∈ [-1, 1]
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> cos_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x < literals::minus_one_exact<T> || x > literals::one_exact<T>) {
+                throw max_precision_for_inverse_trigonometric_function_error();
+            }
+            
+            static exact_number<T> two("2");
+            // acos(x) = pi/2 - asin(x)
+            exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+            result.divide_vector(two, max_error_exponent, upper);
+            result = result - sin_inverse(x, max_error_exponent, upper);
+            result = result.up_to(max_error_exponent, upper);
+            return result;
+        }
+
+        /**
+		 *  INVERSE SECANT FUNCTION USING INVERSE COSINE FUNCTION
+		 * @brief: calculates sec_inverse(x) of a exact_number using cos_inverse
+		 * @param: x: the exact_number, x ∈ (-∞, -1] U [1, ∞)
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> sec_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x > literals::minus_one_exact<T> && x < literals::one_exact<T>) {
+                throw max_precision_for_inverse_trigonometric_function_error();
+            }
+            
+            exact_number<T> reciprocal("1");
+            reciprocal.divide_vector(x, max_error_exponent, upper);
+            return cos_inverse(reciprocal, max_error_exponent, upper);
+        }
+
+        /**
+		 *  INVERSE COSECANT FUNCTION USING INVERSE SINE FUNCTION
+		 * @brief: calculates cosec_inverse(x) of a exact_number using sin_inverse
+		 * @param: x: the exact_number, x ∈ (-∞, -1] U [1, ∞)
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> cosec_inverse(exact_number<T> x, size_t max_error_exponent, bool upper) {
+            if (x > literals::minus_one_exact<T> && x < literals::one_exact<T>) {
+                throw max_precision_for_inverse_trigonometric_function_error();
+            }
+            
+            exact_number<T> reciprocal("1");
+            reciprocal.divide_vector(x, max_error_exponent, upper);
+            return sin_inverse(reciprocal, max_error_exponent, upper);
+        }
+
+        /**
+		 *  TWO ARGUMENT INVERSE TANGENT FUNCTION USING INVERSE TANGENT FUNCTION
+		 * @brief: calculates tan2_inverse(y, x) of a exact_number using tan_inverse
+		 * @param: y: the y-coordinate as exact_number
+         * @param: x: the x-coordinate as exact_number
+		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
+		 * @param:  upper: if true: error lies in [0, +epsilon]
+		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
+		 * @author: Divyam Singal
+		 **/
+        template<typename T>
+        inline exact_number<T> tan2_inverse(exact_number<T> y, exact_number<T> x, size_t max_error_exponent, bool upper) {
+            static exact_number<T> two("2");
+            exact_number<T> x_tan;
+
+            if (x > literals::zero_exact<T>) {
+                // x > 0
+                x_tan = y;
+                x_tan.divide_vector(x, max_error_exponent, upper);
+                return tan_inverse(x_tan, max_error_exponent, upper);
+            }
+            else if (x < literals::zero_exact<T> && y >= literals::zero_exact<T>) {
+                // x < 0, y >= 0
+                x_tan = y;
+                x_tan.divide_vector(x, max_error_exponent, upper);
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result = result + tan_inverse(x_tan, max_error_exponent, upper);
+                result.up_to(max_error_exponent, upper);
+                return result;
+            }
+            else if (x < literals::zero_exact<T> && y < literals::zero_exact<T>) {
+                // x < 0, y < 0
+                x_tan = y;
+                x_tan.divide_vector(x, max_error_exponent, upper);
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.positive = false;
+                result = result + tan_inverse(x_tan, max_error_exponent, upper);
+                result.up_to(max_error_exponent, upper);
+                return result;
+            }
+            else if (x == literals::zero_exact<T> && y > literals::zero_exact<T>) {
+                // x = 0, y > 0
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.divide_vector(two, max_error_exponent, upper);
+                result.up_to(max_error_exponent, upper);
+                return result;
+            }
+            else if (x == literals::zero_exact<T> && y < literals::zero_exact<T>) {
+                // x = 0, y < 0
+                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                result.positive = false;
+                result.divide_vector(two, max_error_exponent, upper);
+                result.up_to(max_error_exponent, upper);
+                return result;
+            }
+            else {
+                // undefined for x = 0 and y = 0
+                throw max_precision_for_inverse_trigonometric_function_error();
+            }
+        }
 
 	}
 }
