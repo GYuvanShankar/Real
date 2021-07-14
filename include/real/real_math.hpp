@@ -172,16 +172,16 @@ namespace boost{
         }
 
         /**
-		 *  SQRT FUNCTION USING NEWTON'S METHOD
+		 *  SQUARE ROOT FUNCTION USING NEWTON'S METHOD
 		 * @brief: calculates square root of a exact_number using Newton's Method
-		 * @param: x: the exact number whose sqrt is to be found
+		 * @param: x: the exact number whose square root is to be found
 		 * @param: max_error_exponent: Absolute Error in the result should be < 1*base^(-max_error_exponent)
 		 * @param:  upper: if true: error lies in [0, +epsilon]
 		 *                  else: error lies in [-epsilon, 0], here epsilon = 1*base^(-max_error_exponent)
 		 * @author: Divyam Singal
 		 **/
         template<typename T>
-		exact_number<T> sqrt(exact_number<T> x, size_t max_error_exponent, bool upper) {
+		exact_number<T> square_root(exact_number<T> x, size_t max_error_exponent, bool upper) {
             // sqrt is defined for non negative numbers
             if (x.positive == false) {
                 throw sqrt_not_defined_for_negative_number();
@@ -567,7 +567,7 @@ namespace boost{
             
             // atan(x) = 2 * atan(x / (1 + sqrt(1 + x^2)))
             exact_number<T> red_x = x;
-            red_x.divide_vector(sqrt((x * x) + literals::one_exact<T>, max_error_exponent, upper) + literals::one_exact<T>, max_error_exponent, upper);
+            red_x.divide_vector(square_root((x * x) + literals::one_exact<T>, max_error_exponent, upper) + literals::one_exact<T>, max_error_exponent, upper);
             exact_number<T> result = tan_inverse(red_x, max_error_exponent, upper);
             result = result + result;
             result.up_to(max_error_exponent, upper);
@@ -597,14 +597,14 @@ namespace boost{
                 // acot(x) = pi + atan(1 / x)
                 exact_number<T> reciprocal("1");
                 reciprocal.divide_vector(x, max_error_exponent, upper);
-                return tan_inverse(reciprocal, max_error_exponent, upper) + boost::real::irrational::exact_pi(max_error_exponent);
+                return tan_inverse(reciprocal, max_error_exponent, upper) + boost::real::irrational::exact_pi<T>(max_error_exponent);
             }
             else { 
                 // -1 < x < 1
                 static exact_number<T> two("2");
 
                 // acot(x) = pi/2 - atan(x)
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result - tan_inverse(x, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
@@ -629,13 +629,13 @@ namespace boost{
             
             static exact_number<T> two("2");
             if (x == literals::one_exact<T>) {
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
                 return result;
             }
             else if (x == literals::minus_one_exact<T>) {
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.positive = true;
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
@@ -645,7 +645,7 @@ namespace boost{
             // asin(x) = atan(x / sqrt(1 - x * x))
             static exact_number<T> one("1");
             exact_number<T> x_tan = x;
-            x_tan.divide_vector(sqrt(one - x * x, max_error_exponent, upper), max_error_exponent, upper);
+            x_tan.divide_vector(square_root(one - x * x, max_error_exponent, upper), max_error_exponent, upper);
             return tan_inverse(x_tan, max_error_exponent, upper);
         }
 
@@ -666,7 +666,7 @@ namespace boost{
             
             static exact_number<T> two("2");
             // acos(x) = pi/2 - asin(x)
-            exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+            exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
             result.divide_vector(two, max_error_exponent, upper);
             result = result - sin_inverse(x, max_error_exponent, upper);
             result = result.up_to(max_error_exponent, upper);
@@ -738,7 +738,7 @@ namespace boost{
                 // x < 0, y >= 0
                 x_tan = y;
                 x_tan.divide_vector(x, max_error_exponent, upper);
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result = result + tan_inverse(x_tan, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
                 return result;
@@ -747,7 +747,7 @@ namespace boost{
                 // x < 0, y < 0
                 x_tan = y;
                 x_tan.divide_vector(x, max_error_exponent, upper);
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.positive = false;
                 result = result + tan_inverse(x_tan, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
@@ -755,14 +755,14 @@ namespace boost{
             }
             else if (x == literals::zero_exact<T> && y > literals::zero_exact<T>) {
                 // x = 0, y > 0
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.divide_vector(two, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
                 return result;
             }
             else if (x == literals::zero_exact<T> && y < literals::zero_exact<T>) {
                 // x = 0, y < 0
-                exact_number<T> result = boost::real::irrational::exact_pi(max_error_exponent);
+                exact_number<T> result = boost::real::irrational::exact_pi<T>(max_error_exponent);
                 result.positive = false;
                 result.divide_vector(two, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
