@@ -19,7 +19,7 @@
 #include <real/real_operation.hpp>
 #include <real/const_precision_iterator.hpp>
 #include <real/real_data.hpp>
-
+#include <real/real_optimization_data.hpp>
 
 namespace boost {
     namespace real {
@@ -72,23 +72,12 @@ namespace boost {
         class real {
         private:
             std::shared_ptr<real_data<T>> _real_p;
+            optimization_data<T> optimize_vars;
+
             // ctor from shared_ptr to (already init) real_data. used in check_and_distribute.
             real(std::shared_ptr<real_data<T>> x) : _real_p(x){ 
-                this->num_nodes = this->find_num_nodes();
-                this->check_if_optimize();
+                this->set_vars_and_check_if_optimize(this->find_num_vars());
             };
-
-            // Frequency of optimizing the tree
-            // -1 denotes no optimization
-            int optimize_freq = -1;
-
-            // number of nodes added in Real tree after previous optimization
-            int num_nodes = 0;
-
-            // indicates whether we use the information of previous optimization
-            bool use_prev = false;
-            // info of the top node at last optimization, used when use_prev is true
-            std::pair<std::shared_ptr<real_data<T>>, std::map<std::shared_ptr<real_data<T>>, int>> prev_top;
 
         public:
             /// @TODO: Move constructors to move directly from the ctors in real_explicit to the values in real_data
@@ -107,7 +96,7 @@ namespace boost {
              *
              * @param other - the boost::real::real instance to copy.
              */
-            real(const real<T>& other)  : _real_p(other._real_p), num_nodes(other.num_nodes) { this->check_if_optimize(); };
+            real(const real<T>& other)  : _real_p(other._real_p), optimize_vars(other.optimize_vars) {};
 
 
             /**
@@ -123,8 +112,7 @@ namespace boost {
 
                     if ((int)(decimal_part.length() + integer_part.length()) <= exponent) {
                         this->_real_p = std::make_shared<real_data<T>>(real_explicit<T>(integer_part, decimal_part, exponent, positive));
-                        this->num_nodes = 1;
-                        this->check_if_optimize();
+                        this->set_vars_and_check_if_optimize(1);
                     } else {
                         int zeroes = decimal_part.length() + integer_part.length() - exponent;
                         std::string denominator = "1";
@@ -139,21 +127,18 @@ namespace boost {
                         std::shared_ptr<real_data<T>> rhs = std::make_shared<real_data<T>>(real_explicit<T>(denominator));
         
                         this->_real_p  = std::make_shared<real_data<T>>(real_operation(lhs, rhs, OPERATION::DIVISION));
-                        this->num_nodes = 2;
-                        this->check_if_optimize();
+                        this->set_vars_and_check_if_optimize(2);
                     }
                 }
                 if(type=="integer"){
                     integer_number<T> a(number);
                     integer_number<T> b("1");
                     this->_real_p = std::make_shared<real_data<T>>(real_rational<T>(a,b));
-                    this->num_nodes = 1;
-                    this->check_if_optimize();
+                    this->set_vars_and_check_if_optimize(1);
                 }
                 if(type=="rational"){
                     this->_real_p = std::make_shared<real_data<T>>(real_rational<T>(number));
-                    this->num_nodes = 1;
-                    this->check_if_optimize();
+                    this->set_vars_and_check_if_optimize(1);
                 }
             }
 
@@ -167,8 +152,7 @@ namespace boost {
 
                         if ((int)(decimal_part.length() + integer_part.length()) <= exponent) {
                             this->_real_p = std::make_shared<real_data<T>>(real_explicit<T>(integer_part, decimal_part, exponent, positive));
-                            this->num_nodes = 1;
-                            this->check_if_optimize();
+                            this->set_vars_and_check_if_optimize(1);
                         } else {
                             int zeroes = decimal_part.length() + integer_part.length() - exponent;
                             std::string denominator = "1";
@@ -183,8 +167,7 @@ namespace boost {
                             std::shared_ptr<real_data<T>> rhs = std::make_shared<real_data<T>>(real_explicit<T>(denominator));
             
                             this->_real_p  = std::make_shared<real_data<T>>(real_operation(lhs, rhs, OPERATION::DIVISION));
-                            this->num_nodes = 2;
-                            this->check_if_optimize();
+                            this->set_vars_and_check_if_optimize(2);
                         }
                         break;
                     }
@@ -193,14 +176,12 @@ namespace boost {
                         integer_number<T> a(number);
                         integer_number<T> b("1");
                         this->_real_p = std::make_shared<real_data<T>>(real_rational<T>(a,b));
-                        this->num_nodes = 1;
-                        this->check_if_optimize();
+                        this->set_vars_and_check_if_optimize(1);
                         break;
                     }
                     case TYPE::RATIONAL:{
                         this->_real_p = std::make_shared<real_data<T>>(real_rational<T>(number));
-                        this->num_nodes = 1;
-                        this->check_if_optimize();
+                        this->set_vars_and_check_if_optimize(1);
                         break;
                     }
                     default:
@@ -215,8 +196,8 @@ namespace boost {
              * @param digits - a initializer_list<T> that represents the number digits.
              */
             real(std::initializer_list<T> digits)
-                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, digits.size()))), num_nodes(1)
-                { this->check_if_optimize(); };
+                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, digits.size())))
+                { this->set_vars_and_check_if_optimize(1); };
 
             /**
              * @brief *Signed initializer list constructor:* Creates a boost::real::real
@@ -229,8 +210,8 @@ namespace boost {
              * the number is positive, otherwise is negative.
              */
             real(std::initializer_list<T> digits, bool positive)
-                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, digits.size(), positive))), num_nodes(1)
-                    { this->check_if_optimize(); };
+                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, digits.size(), positive)))
+                    { this->set_vars_and_check_if_optimize(1); };
 
             /**
              * @brief *Initializer list constructor with exponent:* Creates a boost::real::real
@@ -242,8 +223,8 @@ namespace boost {
              * @param exponent - an integer representing the number exponent.
              */
             real(std::initializer_list<T> digits, int exponent)
-                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, exponent))), num_nodes(1)
-                    { this->check_if_optimize(); };
+                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, exponent)))
+                    { this->set_vars_and_check_if_optimize(1); };
 
             /**
              * @brief *Initializer list constructor with exponent and sign:* Creates a boost::real::real instance
@@ -257,8 +238,8 @@ namespace boost {
              * the number is positive, otherwise is negative.
              */
             real(std::initializer_list<T> digits, int exponent, bool positive)
-                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, exponent, positive))), num_nodes(1)
-                    { this->check_if_optimize(); };
+                    : _real_p(std::make_shared<real_data<T>>(real_explicit<T>(digits, exponent, positive))) 
+                    { this->set_vars_and_check_if_optimize(1); };
 
             /**
              * @brief *Lambda function constructor with exponent:* Creates a boost::real::real
@@ -271,8 +252,8 @@ namespace boost {
              * @param exponent - an integer representing the number exponent.
              */
             real(T (*get_nth_digit)(unsigned int), int exponent)
-                    : _real_p(std::make_shared<real_data<T>>(real_algorithm<T>(get_nth_digit, exponent))), num_nodes(1)
-                    { this->check_if_optimize(); };
+                    : _real_p(std::make_shared<real_data<T>>(real_algorithm<T>(get_nth_digit, exponent)))
+                    { this->set_vars_and_check_if_optimize(1); };
 
             /**
              * @brief *Lambda function constructor with exponent and sign:* Creates a boost::real::real instance
@@ -288,15 +269,14 @@ namespace boost {
              * the number is positive, otherwise is negative.
              */
             real(T (*get_nth_digit)(unsigned int), int exponent, bool positive) 
-                 : _real_p(::std::make_shared<real_data<T>>(real_algorithm<T>(get_nth_digit, exponent, positive))), num_nodes(1) 
-                 { this->check_if_optimize(); };
+                 : _real_p(::std::make_shared<real_data<T>>(real_algorithm<T>(get_nth_digit, exponent, positive))) 
+                 { this->set_vars_and_check_if_optimize(1); };
 
             // ctors from the 3 underlying types
-            real(real_explicit<T> x) : _real_p(std::make_shared<real_data<T>>(x)), num_nodes(1) { this->check_if_optimize(); };
-            real(real_algorithm<T> x) : _real_p(std::make_shared<real_data<T>>(x)), num_nodes(1) { this->check_if_optimize(); };
+            real(real_explicit<T> x) : _real_p(std::make_shared<real_data<T>>(x)) { this->set_vars_and_check_if_optimize(1); };
+            real(real_algorithm<T> x) : _real_p(std::make_shared<real_data<T>>(x)) { this->set_vars_and_check_if_optimize(1); };
             real(real_operation<T> x) : _real_p(std::make_shared<real_data<T>>(x)) { 
-                this->num_nodes = this->find_num_nodes();
-                this->check_if_optimize(); 
+                this->set_vars_and_check_if_optimize(this->find_num_vars()); 
             };
 
             /**
@@ -655,79 +635,125 @@ namespace boost {
             // count stores the Real number and its number of occurences in subtree
             std::shared_ptr<real_data<T>> simplify(std::map<std::shared_ptr<real_data<T>>, int> count) {
                 
-                bool first = true;
+                // shared pointer to the simplified tree
                 std::shared_ptr<real_data<T>> ret;
 
-                bool has_positive_node = false;
-                // pointer having postive number of occurences
-                std::shared_ptr<real_data<T>> positive;
+                // checks whether we found first node for our simplified tree
+                bool found_first_node = false;
+                // checks whether we found a node having positive number of occurences
+                bool found_positive_node = false;
 
-                for (auto x: count) {
-                    if (x.second > 0) {
-                        if (x.second == 1) {
-                            ret = x.first;
-                        }
-                        else {
-                            std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
-                            std::shared_ptr<real_data<T>> num = x.first;
-                            ret = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
-                        }
-                        positive = x.first;
-                        has_positive_node = true;
-                        first = false;
-                        break;
-                    }
-                }
+                // until we don't find the positive node, all nodes which are negative are considered as having postive count
+                // when we find the first positive node, we subtract the current tree from this positive node 
 
                 for (auto x: count) {  
+                    // if occurence is 0, we add nothing to our tree
                     if (x.second == 0) continue;
 
-                    if (first) {
-                        if (x.second == 1) {
-                            ret = x.first;
-                        }
-                        else {
-                            std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
-                            std::shared_ptr<real_data<T>> num = x.first;
-                            ret = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
-                        }
-                        first = false;
-                    }
-                    else {
-                        if (has_positive_node && x.first == positive) continue;
+                    if (!found_first_node) {
                         if (x.second > 0) {
-                            // if no. of times it occurs is positive, we join with + operation
-                            std::shared_ptr<real_data<T>> mul_node;
                             if (x.second == 1) {
-                                mul_node = x.first;
+                                ret = x.first;
                             }
                             else {
                                 std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
                                 std::shared_ptr<real_data<T>> num = x.first;
-                                mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                ret = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
                             }
-                            ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::ADDITION));
+                            found_positive_node = true;
                         }
                         else {
-                            // if no. of times it occurs is negative, we join with - operation
-                            std::shared_ptr<real_data<T>> mul_node;
                             if (x.second == -1) {
-                                mul_node = x.first;
+                                ret = x.first;
                             }
                             else {
+                                // number of occurences taken as positive
                                 std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(-x.second)));
                                 std::shared_ptr<real_data<T>> num = x.first;
-                                mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                ret = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
                             }
-                            ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::SUBTRACTION));
+                        }
+                        found_first_node = true;
+                    }
+                    else {
+                        // after first node, we have to join new multiplication nodes by +/-
+                        if (!found_positive_node)
+                        {
+                            if(x.second > 0) {
+                                std::shared_ptr<real_data<T>> mul_node;
+                                if (x.second == 1) {
+                                    mul_node = x.first;
+                                }
+                                else {
+                                    std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
+                                    std::shared_ptr<real_data<T>> num = x.first;
+                                    mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                }
+                                // we found our positive node, and we subtract our current constructed tree from this positive node
+                                ret = std::make_shared<real_data<T>>(real_operation(mul_node, ret, OPERATION::SUBTRACTION));
+
+                                found_positive_node = true;
+                            }
+                            else
+                            {
+                                // if no. of times it occurs is positive, we join with + operation
+                                std::shared_ptr<real_data<T>> mul_node;
+                                if (x.second == -1) {
+                                    mul_node = x.first;
+                                }
+                                else {
+                                    // number of occurences taken as positive
+                                    std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(-x.second)));
+                                    std::shared_ptr<real_data<T>> num = x.first;
+                                    mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                }
+                                ret = std::make_shared<real_data<T>>(real_operation(mul_node, ret, OPERATION::ADDITION));
+                            }
+                        }
+                        else {
+                            // after finding postive node, we can join these multiplication nodes as usual with +/-
+                            if (x.second > 0) {
+                                // if no. of times it occurs is positive, we join with + operation
+                                std::shared_ptr<real_data<T>> mul_node;
+                                if (x.second == 1) {
+                                    mul_node = x.first;
+                                }
+                                else {
+                                    std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(x.second)));
+                                    std::shared_ptr<real_data<T>> num = x.first;
+                                    mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                }
+                                ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::ADDITION));
+                            }
+                            else {
+                                // if no. of times it occurs is negative, we join with - operation
+                                std::shared_ptr<real_data<T>> mul_node;
+                                if (x.second == -1) {
+                                    mul_node = x.first;
+                                }
+                                else {
+                                    std::shared_ptr<real_data<T>> times = std::make_shared<real_data<T>>(real_explicit<T>(std::to_string(-x.second)));
+                                    std::shared_ptr<real_data<T>> num = x.first;
+                                    mul_node = std::make_shared<real_data<T>>(real_operation(times, num, OPERATION::MULTIPLICATION));
+                                }
+                                ret = std::make_shared<real_data<T>>(real_operation(ret, mul_node, OPERATION::SUBTRACTION));
+                            }
                         }
                     }
                 }
 
-                if (first) { 
-                    real<T> zero("0");
+                if (!found_first_node) { 
+                    // if first node is not found, that means the tree is zero
+                    static real<T> zero("0");
                     ret = zero._real_p;
-                    first = false;
+                    found_first_node = false;
+                }
+                else if (!found_positive_node) {
+                    // if positive node is not found, we subtract the current tree from zero
+                    static real<T> zero("0");
+                    std::shared_ptr<real_data<T>> zero_ptr = zero._real_p;
+                    ret = std::make_shared<real_data<T>>(real_operation(zero_ptr, ret, OPERATION::SUBTRACTION));
+                    found_positive_node = true;
                 }
 
                 return ret;
@@ -739,72 +765,76 @@ namespace boost {
 
                 std::visit( overloaded {
                     [&real_p, top, &count, this] (const real_explicit<T>& real) { 
-                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                        if (optimize_vars.use_prev == true && optimize_vars.prev_top.first == real_p) {
                             // if found previous top node, use its map
-                            count = this->prev_top.second;
+                            count = optimize_vars.prev_top.second;
                         }
                         else
                         {
                             count[real_p]++; 
                             if (top) {
                                 this->_real_p = real_p;
-                                this->use_prev = false;
+                                optimize_vars.use_prev = false;
                             }
                         } 
                     },
                     [&real_p, top, &count, this] (const real_algorithm<T>& real) {
-                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                        if (optimize_vars.use_prev == true && optimize_vars.prev_top.first == real_p) {
                             // if found previous top node, use its map
-                            count = this->prev_top.second;
+                            count = optimize_vars.prev_top.second;
                         }
                         else
                         {
-                            count[real_p]++;  
+                            count[real_p]++; 
                             if (top) {
                                 this->_real_p = real_p;
-                                this->use_prev = false;
+                                optimize_vars.use_prev = false;
                             }
-                        }
+                        } 
                     },
                     [&real_p, top, &count, this] (const real_operation<T>& real) { 
-                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                        if (optimize_vars.use_prev == true && optimize_vars.prev_top.first == real_p) {
                             // if found previous top node, use its map
-                            count = this->prev_top.second; 
+                            count = optimize_vars.prev_top.second; 
                         }
                         else {
                             auto count_lhs = optimize_traversal(real.lhs(), false);
                             auto count_rhs = optimize_traversal(real.rhs(), false);
                             
                             if (real.get_operation() == OPERATION::ADDITION) { 
+                                // maps of lhs and rhs are added
                                 count = count_lhs;
                                 for (auto x: count_rhs) {
                                     count[x.first] += x.second;
                                 }
 
                                 if (top) { 
+                                    // we always have to call simplify() at top
                                     real_p = simplify(count);
                                     this->_real_p = real_p;
 
                                     // we can use this information for further optimization
-                                    this->use_prev = true;
+                                    optimize_vars.use_prev = true;
                                     // For next optimize() call, we need the count map before its simplification
-                                    this->prev_top = make_pair(this->_real_p, count);
+                                    optimize_vars.prev_top = make_pair(this->_real_p, count);
                                 }
                             }
                             else if (real.get_operation() == OPERATION::SUBTRACTION) {
+                                // maps of lhs and rhs are subtracted
                                 count = count_lhs;
                                 for (auto x: count_rhs) {
                                     count[x.first] -= x.second;
                                 }
 
                                 if (top) {
+                                    // we always have to call simplify() at top
                                     real_p = simplify(count);
                                     this->_real_p = real_p;
 
                                     // we can use this information for further optimization
-                                    this->use_prev = true;
+                                    optimize_vars.use_prev = true;
                                     // For next optimize() call, we need the count map before its simplification
-                                    this->prev_top = make_pair(this->_real_p, count);
+                                    optimize_vars.prev_top = make_pair(this->_real_p, count);
                                 }
                             }
                             else 
@@ -818,22 +848,22 @@ namespace boost {
                                 if (top) {
                                     this->_real_p = real_p;
                                     // we can't use the information beneath this node for next optimize() call
-                                    this->use_prev = false;
+                                    optimize_vars.use_prev = false;
                                 }
                             }
                         }
                     },
                     [&real_p, top, &count, this] (const real_rational<T>& real) { 
-                        if (this->use_prev == true && this->prev_top.first == real_p) {
+                        if (optimize_vars.use_prev == true && optimize_vars.prev_top.first == real_p) {
                             // if found previous top node, use its map
-                            count = this->prev_top.second;
+                            count = optimize_vars.prev_top.second;
                         }
                         else
                         {
                             count[real_p]++; 
                             if (top) {
                                 this->_real_p = real_p;
-                                this->use_prev = false;
+                                optimize_vars.use_prev = false;
                             }
                         } 
                     },
@@ -848,23 +878,39 @@ namespace boost {
             // optimizes the dag, converts it into a simplified smaller dag 
             void optimize() {
                 optimize_traversal(this->_real_p, true);
+                // update number of variables after optimization
+                optimize_vars.num_vars = this->find_num_vars();
             }
 
             // sets optimize_freq 
             void set_optimize_freq(int freq) { 
-                this->optimize_freq = freq;
+                optimize_vars.optimize_freq = freq;
                 this->check_if_optimize();
             }
 
-            // Checks if we have to optimize the Real
+            // checks if we have to optimize the real
             void check_if_optimize() { 
-                if (this->optimize_freq != -1 && this->num_nodes >= this->optimize_freq) {
+                if (optimize_vars.optimize_freq != -1 
+                    && optimize_vars.num_vars >= optimize_vars.optimize_freq + optimize_vars.num_vars_at_last_optimize) {
                     this->optimize();
-                    this->num_nodes = 0;
+                    optimize_vars.num_vars_at_last_optimize = optimize_vars.num_vars;
                 }
             }
 
-            int find_num_nodes_traversal(std::shared_ptr<real_data<T>> real_p) {
+            // increment number of variables and check if we have to optimize the real
+            void increment_vars_and_check_if_optimize(int num_vars) {
+                optimize_vars.num_vars += num_vars;
+                this->check_if_optimize();
+            }
+
+            // set number of variables and check if we have to optimize the real
+            void set_vars_and_check_if_optimize(int num_vars) {
+                optimize_vars.num_vars = num_vars;
+                this->check_if_optimize();
+            }
+
+            // helper function to recursively find the number of variables
+            int find_num_vars_traversal(std::shared_ptr<real_data<T>> real_p) {
                 
                 int ret;
 
@@ -876,10 +922,10 @@ namespace boost {
                         ret = 1;
                     },
                     [&ret, this] (const real_operation<T>& real) {
-                        // no. of nodes for real operation
-                        // = no. of left subtree + no. of nodes in right subtree
-                        int ret_lhs = find_num_nodes_traversal(real.lhs());
-                        int ret_rhs = find_num_nodes_traversal(real.rhs());
+                        // no. of variables for real operation
+                        // = no. of variables in left subtree + no. of variables in right subtree
+                        int ret_lhs = find_num_vars_traversal(real.lhs());
+                        int ret_rhs = find_num_vars_traversal(real.rhs());
                         ret = ret_lhs + ret_rhs;
                     },
                     [&ret] (const real_rational<T>& real) {
@@ -893,10 +939,9 @@ namespace boost {
                 return ret;
             }
 
-            // calculates number of nodes in Real tree
-            int find_num_nodes()
-            {
-                int ret = find_num_nodes_traversal(this->_real_p);
+            // calculates the number of variables in real tree
+            int find_num_vars() {
+                int ret = find_num_vars_traversal(this->_real_p);
                 return ret;
             }
 
@@ -1119,7 +1164,7 @@ namespace boost {
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.b));
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         
                         
@@ -1129,8 +1174,7 @@ namespace boost {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::ADDITION));
                         }
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1138,7 +1182,7 @@ namespace boost {
                         if(rat.b == literals::one_integer<T>){
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.a));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         else{
                             real _a;
@@ -1150,7 +1194,7 @@ namespace boost {
 
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 2;
+                            optimize_vars.num_vars += 2;
                         }
 
                         // now adding the numbers
@@ -1170,8 +1214,7 @@ namespace boost {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::ADDITION));
                         }
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
             }
@@ -1189,6 +1232,7 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a+b));
+                        result.optimize_vars.num_vars = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1291,7 +1335,7 @@ namespace boost {
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.b));
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         
                         
@@ -1301,8 +1345,7 @@ namespace boost {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::SUBTRACTION));
                         }
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1310,7 +1353,7 @@ namespace boost {
                         if(rat.b == literals::one_integer<T>){
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.a));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         else{
                             real _a;
@@ -1322,7 +1365,7 @@ namespace boost {
 
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 2;
+                            optimize_vars.num_vars += 2;
                         }
 
                         // now adding the numbers
@@ -1342,8 +1385,7 @@ namespace boost {
                             this->_real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::SUBTRACTION));
                         }
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
                 
@@ -1362,6 +1404,7 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a-b));
+                        result.optimize_vars.num_vars = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1463,15 +1506,14 @@ namespace boost {
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.b));
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         
                         
                         // now adding the numbers
                         this->_real_p = 
                             std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::MULTIPLICATION));
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1479,7 +1521,7 @@ namespace boost {
                         if(rat.b == literals::one_integer<T>){
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.a));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         else{
                             real _a;
@@ -1491,7 +1533,7 @@ namespace boost {
 
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 2;
+                            optimize_vars.num_vars += 2;
                         }
 
                         // now adding the numbers
@@ -1506,8 +1548,7 @@ namespace boost {
                     [this, &other] (auto a, auto b){
                         this->_real_p =
                         std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::MULTIPLICATION));
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
                 
@@ -1526,6 +1567,7 @@ namespace boost {
                     [&result] (real_rational<T> a, real_rational<T> b){
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational<T>(a*b));
+                        result.optimize_vars.num_vars = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1599,6 +1641,7 @@ namespace boost {
                         real_rational<T> result1 = a/b;
                         result._real_p = 
                             std::make_shared<real_data<T>>(real_rational(result1));
+                        result.optimize_vars.num_vars = 1;
                     },
 
                     [this, &other, &result] (real_rational<T> rat, auto tmp){
@@ -1689,15 +1732,14 @@ namespace boost {
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.b));
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation<T>(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         
                         
                         // now adding the numbers
                         this->_real_p = 
                             std::make_shared<real_data<T>>(real_operation<T>(rat_num._real_p, other._real_p, OPERATION::DIVISION));
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     },
 
                     [this, &other] (auto tmp, real_rational<T> rat){
@@ -1705,7 +1747,7 @@ namespace boost {
                         if(rat.b==literals::one_integer<T>){
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_explicit<T>(rat.a));
-                            this->num_nodes += 1;
+                            optimize_vars.num_vars += 1;
                         }
                         else{
                             real _a;
@@ -1717,7 +1759,7 @@ namespace boost {
 
                             rat_num._real_p = 
                                 std::make_shared<real_data<T>>(real_operation(_a._real_p, _b._real_p, OPERATION::DIVISION));
-                            this->num_nodes += 2;
+                            optimize_vars.num_vars += 2;
                         }
 
                         // now adding the numbers
@@ -1731,8 +1773,7 @@ namespace boost {
                     [this, &other] (auto a, auto b){
                         this->_real_p =
                             std::make_shared<real_data<T>>(real_operation<T>(this->_real_p, other._real_p, OPERATION::DIVISION));
-                        this->num_nodes += other.num_nodes;
-                        this->check_if_optimize();
+                        this->increment_vars_and_check_if_optimize(other.optimize_vars.num_vars);
                     }
                 }, _real_p->get_real_number(), other._real_p->get_real_number());
                 
@@ -1744,7 +1785,7 @@ namespace boost {
              */
             void operator=(real<T> other) {
                 this->_real_p = other._real_p;
-                this->num_nodes = other.num_nodes;
+                this->optimize_vars = other.optimize_vars;
             }
 
             /**
@@ -1754,7 +1795,7 @@ namespace boost {
             void operator=(const std::string& number) {
                 this->_real_p =
                     std::make_shared<real_data<T>>(real_explicit<T>(number));
-                this->num_nodes = 1;
+                optimize_vars.num_vars = 1;
             }
 
             /**
@@ -2308,7 +2349,7 @@ namespace boost {
 
                     this->_real_p = 
                         std::make_shared<real_data<T>>(real_operation<T>(_a, _b, OPERATION::DIVISION));
-                    this->num_nodes = 2;
+                    optimize_vars.num_vars = 2;
                 },
                 [] (auto tmp){
                     throw expected_real_rational_type_number();
