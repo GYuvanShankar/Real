@@ -226,27 +226,33 @@ namespace boost{
             return result;
         }
 
-        // most precise pi calculated
-        template<typename T>
-        exact_number<T> max_precise_pi;
-
-        // maximum error exponent of pi calculated
-        size_t max_error_exponent_pi = 0;
-
-        // returns pi with the given max_error_exponent
-        template<typename T>
-        exact_number<T> get_pi(size_t max_error_exponent, bool upper)
+        template<typename T> 
+        struct max_precise_pi
         {
-            if (max_error_exponent > max_error_exponent_pi) {
-                // if we need pi at more precision than current precision, we recalculate pi
-                max_precise_pi<T> = boost::real::irrational::pi<T>(max_error_exponent);
-                return max_precise_pi<T>;
+            // most precise pi calculated
+            exact_number<T> curr_pi;
+
+            // maximum error exponent of pi calculated
+            size_t max_error_exponent_pi = 0;
+
+            // returns pi with the given max_error_exponent
+            exact_number<T> get(size_t max_error_exponent, bool upper)
+            {
+                if (max_error_exponent > max_error_exponent_pi) {
+                    // if we need pi at more precision than current precision, we recalculate pi
+                    curr_pi = boost::real::irrational::pi<T>(max_error_exponent);
+                    max_error_exponent_pi = max_error_exponent;
+                    return curr_pi;
+                }
+                else {
+                    // otherwise we use the up_to method on the previous most precise pi
+                    return curr_pi.up_to(max_error_exponent, upper);
+                }
             }
-            else {
-                // otherwise we use the up_to method on the previous most precise pi
-                return max_precise_pi<T>.up_to(max_error_exponent, upper);
-            }
-        }
+        };
+
+        template<typename T>
+        max_precise_pi<T> pi;
 
 		/**
 		 *  SINE FUNCTION USING TAYLOR EXPANSION
@@ -310,10 +316,10 @@ namespace boost{
 
             // floor(x / 2PI) times 2PI is not needed
             k.divide_vector(two, max_error_exponent, upper);
-            k.divide_vector(get_pi<T>(max_error_exponent, upper), max_error_exponent, upper);
+            k.divide_vector(pi<T>.get(max_error_exponent, upper), max_error_exponent, upper);
             k.floor();
 
-            k = k * two * get_pi<T>(max_error_exponent, !upper); 
+            k = k * two * pi<T>.get(max_error_exponent, !upper); 
             red_x -= k;
 
             return sine_taylor(red_x, max_error_exponent, upper);
@@ -381,10 +387,10 @@ namespace boost{
 
             // floor(x / 2PI) times 2PI is not needed
             k.divide_vector(two, max_error_exponent, upper);
-            k.divide_vector(get_pi<T>(max_error_exponent, upper), max_error_exponent, upper);
+            k.divide_vector(pi<T>.get(max_error_exponent, upper), max_error_exponent, upper);
             k.floor();
 
-            k = k * two * get_pi<T>(max_error_exponent, !upper); 
+            k = k * two * pi<T>.get(max_error_exponent, !upper); 
             red_x -= k;
 
             return cosine_taylor(red_x, max_error_exponent, upper);
@@ -460,10 +466,10 @@ namespace boost{
 
             // floor(x / 2PI) times 2PI is not needed
             k.divide_vector(two, max_error_exponent, upper);
-            k.divide_vector(get_pi<T>(max_error_exponent, upper), max_error_exponent, upper);
+            k.divide_vector(pi<T>.get(max_error_exponent, upper), max_error_exponent, upper);
             k.floor();
 
-            k = k * two * get_pi<T>(max_error_exponent, !upper); 
+            k = k * two * pi<T>.get(max_error_exponent, !upper); 
             red_x -= k;
 
             return sin_cos_taylor(red_x, max_error_exponent, upper);
@@ -633,14 +639,14 @@ namespace boost{
                 // acot(x) = pi + atan(1 / x), i.e. more negative the x, faster is calculating atan(1 / x)
                 exact_number<T> reciprocal("1");
                 reciprocal.divide_vector(x, max_error_exponent, upper);
-                return tan_inverse(reciprocal, max_error_exponent, upper) + get_pi<T>(max_error_exponent, upper);
+                return tan_inverse(reciprocal, max_error_exponent, upper) + pi<T>.get(max_error_exponent, upper);
             }
             else { 
                 // -1 < x < 1
                 // here it is better to calculate atan(x) rather than atan(1 / x)
                 static exact_number<T> two("2");
                 // acot(x) = pi/2 - atan(x)
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result - tan_inverse(x, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
@@ -667,13 +673,13 @@ namespace boost{
             // special cases when x = -1 or 1, to avoid division by 0
             static exact_number<T> two("2");
             if (x == literals::one_exact<T>) {
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
                 return result;
             }
             else if (x == literals::minus_one_exact<T>) {
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.positive = true;
                 result.divide_vector(two, max_error_exponent, upper);
                 result = result.up_to(max_error_exponent, upper);
@@ -705,7 +711,7 @@ namespace boost{
             
             static exact_number<T> two("2");
             // acos(x) = pi/2 - asin(x)
-            exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+            exact_number<T> result = pi<T>.get(max_error_exponent, upper);
             result.divide_vector(two, max_error_exponent, upper);
             result = result - sin_inverse(x, max_error_exponent, upper);
             result = result.up_to(max_error_exponent, upper);
@@ -783,7 +789,7 @@ namespace boost{
                 // atan2(y, x) = atan(y / x) + PI
                 x_tan = y;
                 x_tan.divide_vector(x, max_error_exponent, upper);
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result = result + tan_inverse(x_tan, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
                 return result;
@@ -793,7 +799,7 @@ namespace boost{
                 // atan2(y, x) = atan(y / x) - PI
                 x_tan = y;
                 x_tan.divide_vector(x, max_error_exponent, upper);
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.positive = false;
                 result = result + tan_inverse(x_tan, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
@@ -802,7 +808,7 @@ namespace boost{
             else if (x == literals::zero_exact<T> && y > literals::zero_exact<T>) {
                 // x = 0, y > 0
                 // atan2(y, x) = PI / 2
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.divide_vector(two, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
                 return result;
@@ -810,7 +816,7 @@ namespace boost{
             else if (x == literals::zero_exact<T> && y < literals::zero_exact<T>) {
                 // x = 0, y < 0
                 // atan2(y, x) = -PI / 2
-                exact_number<T> result = get_pi<T>(max_error_exponent, upper);
+                exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.positive = false;
                 result.divide_vector(two, max_error_exponent, upper);
                 result.up_to(max_error_exponent, upper);
