@@ -55,9 +55,14 @@ namespace boost {
             /// @TODO: figure out how to avoid unnecessary recalculation by saving
             // some information from the previous iteration.
 
-
+            /**
+             * @brief Returns the exact number version of Pi
+             * 
+             * @param max_error_exponent - Absolute Error in the result should be < 1*base^(-max_error_exponent)
+             * @return The exact number value of Pi
+             */
             template <typename T = int>
-            T pi_nth_digit(unsigned int n) {
+            exact_number<T> pi(size_t max_error_exponent) {
                 // Chudnovsky Algorithm
                 // pi = C * ( sum_from_k=0_to_k=x (Mk * Lk / Xk) )^(-1) 
                 // increasing x you get more precise pi
@@ -89,7 +94,7 @@ namespace boost {
                 static exact_number<T> one("1");
 
                 static boost::real::const_precision_iterator<T> real_c_itr = real_c.get_real_itr();
-                real_c_itr.set_maximum_precision(n + 1);
+                real_c_itr.set_maximum_precision(max_error_exponent);
                 const exact_number<T> C = real_c_itr.cend().get_interval().lower_bound;
 
 
@@ -100,22 +105,22 @@ namespace boost {
                 exact_number<T> prev_pi;
                 exact_number<T> pi;
                 exact_number<T> error;
-                const exact_number<T> max_error(std::vector<T> {1}, -(n + 1), true);
+                const exact_number<T> max_error(std::vector<T> {1}, -(max_error_exponent), true);
 
                 do {  
                     exact_number<T> temp = K * K * K - _16 * K;
-                    temp.divide_vector(iteration_number * iteration_number * iteration_number, n + 1, true);
+                    temp.divide_vector(iteration_number * iteration_number * iteration_number, max_error_exponent, true);
                     M *= temp;
                     X *= X0;
                     L += L0;
                     K += _12;
 
                     temp = M * L;
-                    temp.divide_vector(X, n + 1, false);
+                    temp.divide_vector(X, max_error_exponent, false);
                     S += temp;
 
                     temp = C;
-                    temp.divide_vector(S, n + 1, false);
+                    temp.divide_vector(S, max_error_exponent, false);
 
                     pi = temp;
                     if (!first_iteration_over) {
@@ -135,7 +140,18 @@ namespace boost {
 
                 } while (!nth_digit_found);
 
-                return pi[n];
+                return pi;
+            }
+
+            /**
+             * @brief Returns the n-th digit of pi
+             * 
+             * @param n - The number digit index.
+             * @return n-th digit of pi
+             */
+            template <typename T = int>
+            T pi_nth_digit(unsigned int n) {
+                return pi<T>(n + 1)[n];
             }
         }
     }

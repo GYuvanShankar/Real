@@ -124,6 +124,12 @@ namespace boost {
             }
         };
 
+        struct max_precision_for_inverse_trigonometric_function_error : public std::exception {
+            const char * what() const throw () override {
+                return "Number is not in domain of this inverse trigonometric function";
+            }
+        };
+
         struct negative_integers_not_supported : public std::exception {
             const char * what() const throw () override {
                 return "Integer Power function only supports positive integers";
