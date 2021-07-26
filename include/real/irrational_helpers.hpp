@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <real/real.hpp>
+#include <real/convenience.hpp>
 #include <math.h>
 #include <limits>
 
@@ -13,24 +14,47 @@ namespace boost {
             inline const int PLACEHOLDER = 10; 
 
             /**
-             * @brief The function returns the n-th digit of the champernowne number in the
-             * binary integer version.
+             * @brief The function returns the n-th digit of the binary champernowne number.
              *
              * @param n - The number digit index.
-             * @return The value of the champernowne number n-th digit (either 0 or 1)
+             * @return The value of the champernowne number n-th digit
              */
-            int champernowne_binary_get_nth_digit(unsigned int n) {
-                std::vector<int> binary = {1};
-                unsigned int index = 0;
+            template <typename T = int>
+            T champernowne_binary_get_nth_digit(unsigned int n) {
+                // We write it as division of champernowne sequence digits and exponent
+                // eg. 0.11011 in base 2 can be written as division of 11011 and 100000
+                // And convert them to the correct base of (std::numeric_limits<T>::max() / 4) * 2
+                // Using append_digits method for base conversion 
+                
+                bool nth_digit_found = false;
 
-                while (index < n) {
+                exact_number<T> prev_champernowne;
+                exact_number<T> champernowne;
+                exact_number<T> champernowne_seq;
+                exact_number<T> two_pow;
+                exact_number<T> error;
+                const exact_number<T> max_error(std::vector<T> {1}, -(n + 1), true);
+                
+                std::vector<int> binary = {1}; 
+                append_digits(champernowne_seq.digits, (std::numeric_limits<T>::max() / 4) * 2, binary, 2);
 
+                std::vector<int> powers;
+                powers.push_back(0);
+                append_digits(two_pow.digits, (std::numeric_limits<T>::max() / 4) * 2, 1, 2);
+                append_digits(two_pow.digits, (std::numeric_limits<T>::max() / 4) * 2, powers, 2);
+                
+                champernowne = champernowne_seq;
+                champernowne.divide_vector(two_pow, n + 2, false);
+                prev_champernowne = champernowne; 
+
+                do {
                     if (std::all_of(binary.begin(), binary.end(), [](int d) -> bool { return d == 1; })) {
 
                         for (int i = (int)binary.size() - 1; i >= 0; i--) {
                             binary[i] = 0;
                         }
                         binary.insert(binary.begin(), 1);
+                        powers.push_back(0);
 
                     } else {
 
@@ -44,11 +68,54 @@ namespace boost {
                             }
                         }
                     }
+                    
+                    append_digits(champernowne_seq.digits, (std::numeric_limits<T>::max() / 4) * 2, binary, 2);
+                    append_digits(two_pow.digits, (std::numeric_limits<T>::max() / 4) * 2, powers, 2);
+                    
+                    champernowne = champernowne_seq;
+                    champernowne.divide_vector(two_pow, n + 2, false);
+                    
+                    error = champernowne - prev_champernowne;
+                    error.positive = true;
 
-                    index += binary.size();
+                    if (error < max_error) {
+                        nth_digit_found = true;
+                    }
+                    prev_champernowne = champernowne;
+
+                } while (!nth_digit_found);
+
+                return champernowne[n];
+            }
+            
+
+            // Returns the n-th binary digit of champernowne binary number
+            int champernowne_binary_get_nth_binary_digit(unsigned int n) {
+                if (n == 0) {
+                    return 1;
                 }
 
-                return binary[binary.size() - 1 - (index - n)];
+                // binary digits is the number of digits of the binary number of which n-th digit is a part of
+                unsigned int binary_digits = 1, pw = 2;
+                while((binary_digits - 1) * pw < n) {
+                    binary_digits++; 
+                    pw *= 2;
+                }
+                binary_digits--;
+
+                unsigned int digits_left = n - (binary_digits - 1) * (pw / 2); 
+                // binary number to which n-th digit belongs 
+                unsigned int binary_num = (pw / 2) + (digits_left - 1) / (binary_digits + 1); 
+
+                // position of n-th digit in binary number
+                unsigned int rev_pos = (digits_left) % (binary_digits + 1);
+                if (rev_pos == 0) {
+                    rev_pos = binary_digits + 1;
+                }
+                unsigned int pos = binary_digits + 1 - rev_pos; 
+
+                int digit = (binary_num & (1 << pos)) ? 1 : 0;
+                return digit;
             }
 
 

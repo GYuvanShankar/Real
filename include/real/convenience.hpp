@@ -208,7 +208,7 @@ template<typename T1, typename T2>
 void append_digits(std::vector<T1> &number, T1 num_base, std::vector<T2> &digits, T2 digit_base)
 {
     for(auto &digit: digits){
-        add_digits(number, num_base, digit, digit_base); 
+        append_digits(number, num_base, digit, digit_base); 
     }
     return ;
 }
