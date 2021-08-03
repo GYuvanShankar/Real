@@ -19,6 +19,9 @@ namespace boost {
 
             template <typename T = int>
             boost::real::real<T> PI(boost::real::irrational::pi_nth_digit<T>, 1);
+
+            template <typename T = int>
+            boost::real::real<T> GOLDEN_RATIO(boost::real::irrational::golden_ratio_nth_digit<T>, 1);
         }
     }
 }

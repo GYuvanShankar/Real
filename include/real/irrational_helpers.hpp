@@ -220,6 +220,46 @@ namespace boost {
             T pi_nth_digit(unsigned int n) {
                 return pi<T>(n + 1)[n];
             }
+
+
+            /**
+             * @brief Returns the n-th digit of golden ratio, using Newton's method
+             * @param n - IThe number digit index
+             * @return n-th digit of golden ratio
+             * @author Divyam Singal
+             **/
+            template <typename T = int>
+            T golden_ratio_nth_digit(unsigned int n) {
+                // initial approximation of phi
+                static boost::real::real<T> real_phi("1.6180339");
+                static boost::real::const_precision_iterator<T> real_phi_itr = real_phi.get_real_itr();
+                real_phi_itr.set_maximum_precision(n + 1);
+
+                exact_number<T> phi = real_phi_itr.cend().get_interval().lower_bound;
+                const exact_number<T> max_error(std::vector<T> {1}, -(n + 1), true);
+                exact_number<T> error;
+
+                exact_number<T> prev_phi = phi;
+                bool nth_digit_found = false;
+
+                do {
+                    // Newton's iteration
+                    // phi = (phi ^ 2 + 2 * phi)/(phi ^ 2 + 1)
+                    exact_number<T> phi_squared = prev_phi * prev_phi;
+                    phi = phi_squared + prev_phi * literals::two_exact<T>;
+                    phi.divide_vector(phi_squared + literals::one_exact<T>, n + 1, true);
+
+                    error = phi - prev_phi;
+                    error.positive = true;
+
+                    if (error < max_error) {
+                        nth_digit_found = true;
+                    }
+                    prev_phi = phi;
+                } while(!nth_digit_found);
+
+                return phi[n];
+            }
         }
     }
 }
