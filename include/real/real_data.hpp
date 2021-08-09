@@ -375,6 +375,31 @@ namespace boost {
                     break;
                 }
 
+                case OPERATION::SQRT :{
+                    // if upper bound of number is zero or negative, then it is sure that number is out of domain
+                    if (ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true).positive == false) {
+                        throw sqrt_not_defined_for_negative_number();
+                    }
+                    // now if we get our lower bound as negative, then we iterate for more precise input, until maximum precision is reached or we get a non-negative lower bound
+                    while(true) {
+                        if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false).positive == false) {
+                            if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                throw sqrt_not_defined_for_negative_number();
+                            }
+                            ro.get_lhs_itr().iterate_n_times(1);
+                            ++_precision;
+                        }
+                        else break;
+                    }
+
+                    // sqrt is an increasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        square_root(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        square_root(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, true);
+                    break;
+                }
+
                 case OPERATION::SIN :{
                     /** 
                      * First we ensure that our input interval is greater than 2π or not. We can either check that by comparing the difference
