@@ -920,4 +920,442 @@ TEST_CASE("SQURE ROOT FUNCTION TEST"){
 		}
 
 	}
+    
+}
+
+TEST_CASE("INVERSE TRIGONOMETRIC FUNCTION") {
+    using real = boost::real::real<int>;
+    SECTION("BASIC INVERSE TRIGONOMETRIC VALUES") {
+        real a("0");
+        real b = real::asin(a);  // asin(0) = 0
+        CHECK(a == b);
+        b = real::atan(a);  // atan(0) = 0
+        CHECK(a == b);
+
+        b = real::acos(a);  // acos(0) = 1.570796326794896
+		real lower_limit("1.570796326794895");
+		real upper_limit("1.570796326794897");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        b = real::acot(a);  // acot(0) = 1.570796326794896
+        lower_limit = real("1.570796326794895");
+		upper_limit = real("1.570796326794897");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        CHECK_THROWS_AS(b = real::asec(a), boost::real::max_precision_for_inverse_trigonometric_function_error);  // asec(0) is not defined
+        CHECK_THROWS_AS(b = real::acosec(a), boost::real::max_precision_for_inverse_trigonometric_function_error);  // acosec(0) is not defined
+
+        a = real("0.123");
+        b = real::asin(a);  // asin(0.123) = 0.123312275191871
+        lower_limit = real("0.123312275191870");
+		upper_limit = real("0.123312275191872");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        b = real::acos(a);  // acos(0.123) = 1.447484051603024
+        lower_limit = real("1.447484051603023");
+		upper_limit = real("1.447484051603025");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        b = real::atan(a);  // atan(0.123) = 0.122385281471802
+        lower_limit = real("0.122385281471801");
+		upper_limit = real("0.122385281471803");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        b = real::acot(a);  // acot(0.123) = 1.448411045323093
+        lower_limit = real("1.448411045323092");
+		upper_limit = real("1.448411045323094");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        a = real("1.23");
+        b = real::asec(a);  // asec(1.23) = 0.621496322143838 
+        lower_limit = real("0.621496322143837");
+		upper_limit = real("0.621496322143839");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        b = real::acosec(a);  // acosec(1.23) = 0.949300004651058
+        lower_limit = real("0.949300004651057");
+		upper_limit = real("0.949300004651059");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        // Two argument inverse tangent function checks
+        real y("0.12");
+        real x("0.34");
+        b = real::atan2(y, x);  // atan2(0.12, 0.34) = 0.339292614454044
+        lower_limit = real("0.339292614454043");
+		upper_limit = real("0.339292614454045");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("-0.12");
+        x = real("0.34");
+        b = real::atan2(y, x);  // atan2(-0.12, 0.34) = -0.339292614454044
+        lower_limit = real("-0.339292614454045");
+		upper_limit = real("-0.339292614454043");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("0.12");
+        x = real("-0.34");
+        b = real::atan2(y, x);  // atan2(0.12, -0.34) = 2.802300039135748
+        lower_limit = real("2.802300039135747");
+		upper_limit = real("2.802300039135749");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("-0.12");
+        x = real("-0.34");
+        b = real::atan2(y, x);  // atan2(-0.12, -0.34) = -2.802300039135748
+        lower_limit = real("-2.802300039135749");
+		upper_limit = real("-2.802300039135747");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("0");
+        x = real("0.34");
+        b = real::atan2(y, x);  // atan2(0, 0.34) = 0
+		CHECK(b == y);
+
+        y = real("0.12");
+        x = real("0");
+        b = real::atan2(y, x);  // atan2(0.12, 0) = 1.570796326794896
+        lower_limit = real("1.570796326794895");
+		upper_limit = real("1.570796326794897");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("-0.12");
+        x = real("0");
+        b = real::atan2(y, x);  // atan2(-0.12, 0) = -1.570796326794896
+        lower_limit = real("-1.570796326794897");
+		upper_limit = real("-1.570796326794895");
+		CHECK(b > lower_limit);
+		CHECK(b < upper_limit);
+
+        y = real("0");
+        x = real("0");
+		CHECK_THROWS_AS(b = real::atan2(y, x), boost::real::max_precision_for_inverse_trigonometric_function_error);  // atan2(0, 0) is not defined
+    }
+
+    SECTION("ADDITION OPERATION (A+B)") {
+        real a("0.11");
+		real b("0.08");
+		real value = a + b;  // 0.11 + 0.08 = 0.19
+
+        real result = real::asin(value);  // asin(0.19) = 0.191162146531059
+		real lower_limit("0.191162146531058");
+		real upper_limit("0.191162146531060");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acos(value);  // acos(0.19) = 1.379634180263837
+        lower_limit = real("1.379634180263836");
+		upper_limit = real("1.379634180263838");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::atan(value);  // atan(0.19) = 0.18776194651359
+        lower_limit = real("0.18776194651358");
+		upper_limit = real("0.18776194651360");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acot(value);  // acot(0.19) = 1.383034380281303
+        lower_limit = real("1.383034380281302");
+		upper_limit = real("1.383034380281304");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        real c("0.31");
+        real d("0.34");
+        real value1 = c + d;  // 0.31 + 0.34 = 0.65
+        result = real::atan2(value, value1);  // atan2(0.19, 0.65) = 0.284384776593858
+        lower_limit = real("0.284384776593857");
+		upper_limit = real("0.284384776593859");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.15");
+		b = real("0.32");
+		value = a + b;  // 1.15 + 0.32 = 1.47
+
+        result = real::asec(value);  // asec(1.47) = 0.82266250937668
+        lower_limit = real("0.82266250937667");
+		upper_limit = real("0.82266250937669");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acosec(value);  // acosec(1.47) = 0.748133817418210
+        lower_limit = real("0.748133817418209");
+		upper_limit = real("0.748133817418211");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+    }
+
+    SECTION("SUBTRACTION OPERATION (A-B)") {
+        real a("0.15");
+		real b("0.32");
+		real value = a - b;  // 0.15 - 0.32 = -0.17
+
+        real result = real::asin(value);  // asin(-0.17) = -0.170829669129104
+		real lower_limit("-0.170829669129105");
+		real upper_limit("-0.170829669129103");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acos(value);  // acos(-0.17) = 1.741625995924001
+        lower_limit = real("1.741625995924000");
+		upper_limit = real("1.741625995924002");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::atan(value);  // atan(-0.17) = -0.168390157147529
+        lower_limit = real("-0.168390157147530");
+		upper_limit = real("-0.168390157147528");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acot(value);  // acot(-0.17) = 1.739186483942426
+        lower_limit = real("1.739186483942425");
+		upper_limit = real("1.739186483942427");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        real c("0.31");
+        real d("-0.34");
+        real value1 = c - d;  // 0.31 - (-0.34) = 0.65
+        result = real::atan2(value, value1);  // atan2(-0.17, 0.65) = -0.255808564615371
+        lower_limit = real("-0.255808564615372");
+		upper_limit = real("-0.255808564615370");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.15");
+		b = real("2.32");
+		value = a - b;  // 1.15 - 2.32 = -1.17
+
+        result = real::asec(value);  // asec(-1.17) = 2.595770639027918
+        lower_limit = real("2.595770639027917");
+		upper_limit = real("2.595770639027919");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acosec(value);  // acosec(-1.17) = -1.024974312233021
+        lower_limit = real("-1.024974312233022");
+		upper_limit = real("-1.024974312233020");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+    }
+
+    SECTION("MULTIPLICATION OPERATION (A*B)") {
+        real a("0.15");
+		real b("1.5");
+		real value = a * b;  // 0.15 * 1.5 = 0.225
+
+        real result = real::asin(value);  // asin(0.225) = 0.226943036178519
+		real lower_limit("0.226943036178518");
+		real upper_limit("0.226943036178520");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acos(value);  // acos(0.225) = 1.343853290616376
+        lower_limit = real("1.343853290616375");
+		upper_limit = real("1.343853290616377");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::atan(value);  // atan(0.225) = 0.221314442347791
+        lower_limit = real("0.221314442347790");
+		upper_limit = real("0.221314442347792");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acot(value);  // acot(0.225) = 1.349481884447105
+        lower_limit = real("1.349481884447104");
+		upper_limit = real("1.349481884447106");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        real c("-1");
+        real d("2");
+        real value1 = c * d;  // -1 * 2 = 2
+        result = real::atan2(value, value1);  // atan2(0.225, -2) = 3.029563691163805
+        lower_limit = real("3.029563691163804");
+		upper_limit = real("3.029563691163806");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.15");
+		b = real("2.32");
+		value = a * b;  // 1.15 * 2.32 = 2.668
+
+        result = real::asec(value);  // asec(2.668) = 1.186601702914606
+        lower_limit = real("1.186601702914605");
+		upper_limit = real("1.186601702914607");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acosec(value);  // acosec(2.668) = 0.384194623880290
+        lower_limit = real("0.384194623880289");
+		upper_limit = real("0.384194623880291");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+    }
+
+    SECTION("DIVISION OPERATION (A/B)") {
+        real a("-8.2");
+		real b("100");
+		real value = a / b;  // -8.2 / 100 = -0.082
+
+        real result = real::asin(value);  // asin(-0.082) = -0.082092173839548
+		real lower_limit("-0.082092173839549");
+		real upper_limit("-0.082092173839547");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acos(value);  // acos(-0.082) = 1.652888500634445
+        lower_limit = real("1.652888500634444");
+		upper_limit = real("1.652888500634446");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acot(value);  // acot(-0.082) = 1.652613275398551
+        lower_limit = real("1.652613275398550");
+		upper_limit = real("1.652613275398552");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        real c("1");
+        real d("2");
+        real value1 = c / d;  // 1 / 2 = 0.5
+        result = real::atan2(value, value1);  // atan2(-0.082, 0.5) = -0.162552966177525
+        lower_limit = real("-0.162552966177526");
+		upper_limit = real("-0.162552966177524");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        value1 = c + d;  // 1 + 2 = 3
+        result = real::atan2(value, value1);  // atan2(-0.082, 3) = -0.027326529370716
+        lower_limit = real("-0.027326529370717");
+		upper_limit = real("-0.027326529370715");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("17");
+		b = real("10");
+		value = a / b;  // 17 / 10 = 1.7
+
+        result = real::atan(value);  // atan(1.7) = 1.039072259536091
+        lower_limit = real("1.039072259536090");
+		upper_limit = real("1.039072259536092");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::asec(value);  // asec(1.7) = 0.941921401299844
+        lower_limit = real("0.941921401299843");
+		upper_limit = real("0.941921401299845");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        result = real::acosec(value);  // acosec(1.7) = 0.628874925495051
+        lower_limit = real("0.628874925495050");
+		upper_limit = real("0.628874925495052");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+    }
+
+    SECTION("INVERSE TRIGONOMETRIC PROPERTIES") {
+        // inverse_trig(trig(a)) identity
+        real a("0.11");
+        real result = real::asin(real::sin(a));  // asin(sin(0.11)) = 0.110000000000000
+        real lower_limit("0.109999999999999");
+		real upper_limit("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        // a = real("3.11");
+        // result = real::acos(real::cos(a));  // acos(cos(3.11)) = 3.110000000000000
+        // lower_limit = real("3.109999999999999");
+		// upper_limit = real("3.110000000000001");
+		// CHECK(result > lower_limit);
+		// CHECK(result < upper_limit);
+
+        a = real("0.11");
+        result = real::atan(real::tan(a));  // atan(tan(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("0.11");
+        result = real::acot(real::cot(a));  // acot(cot(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.1");
+        result = real::asec(real::sec(a));  // asec(sec(1.1)) = 1.100000000000000
+        lower_limit = real("1.099999999999999");
+		upper_limit = real("1.100000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.1");
+        result = real::acosec(real::cosec(a));  // acosec(cosec(1.1)) = 1.100000000000000
+        lower_limit = real("1.099999999999999");
+		upper_limit = real("1.100000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        // trig(inverse_trig(a)) identity
+        a = real("0.11");
+        result = real::sin(real::asin(a));  // sin(asin(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("0.11");
+        result = real::cos(real::acos(a));  // cos(acos(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("0.11");
+        result = real::tan(real::atan(a));  // tan(atan(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("0.11");
+        result = real::cot(real::acot(a));  // cot(acot(0.11)) = 0.110000000000000
+        lower_limit = real("0.109999999999999");
+		upper_limit = real("0.110000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.1");
+        result = real::sec(real::asec(a));  // sec(asec(1.1)) = 1.100000000000000
+        lower_limit = real("1.099999999999999");
+		upper_limit = real("1.100000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+
+        a = real("1.1");
+        result = real::cosec(real::acosec(a));  // cosec(acosec(1.1)) = 1.100000000000000
+        lower_limit = real("1.099999999999999");
+		upper_limit = real("1.100000000000001");
+		CHECK(result > lower_limit);
+		CHECK(result < upper_limit);
+    }
 }
