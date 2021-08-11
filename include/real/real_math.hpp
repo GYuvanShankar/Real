@@ -96,7 +96,10 @@ namespace boost{
 						result += cur_term;	
 					x_pow = x_pow * (x - literals::one_exact<T>);
 					cur_term = x_pow;
-					cur_term.divide_vector(term_number, max_error_exponent, upper);
+                    if (term_number_int % 2 == 1)
+					    cur_term.divide_vector(term_number, max_error_exponent, upper);
+                    else 
+                        cur_term.divide_vector(term_number, max_error_exponent, !upper);  // as we are subtracting next, !upper is passed
 					++term_number_int;
 					term_number = term_number + literals::one_exact<T>;
 
@@ -173,7 +176,7 @@ namespace boost{
                 exact_number<T> minus_one = literals::minus_one_exact<T>;
                 // log(x) = -log(1 / x)
                 rev_x.divide_vector(x, max_error_exponent, upper);
-                result = minus_one * logarithm_recurse(rev_x, max_error_exponent, upper);
+                result = minus_one * logarithm_recurse(rev_x, max_error_exponent, !upper);
             }
             result = result.up_to(max_error_exponent, upper);
             return result;
@@ -287,7 +290,13 @@ namespace boost{
 				x_pow *= x_square; // increasing power by two powers of original x
 				factorial = factorial * ( two * term_number) * ( (two * term_number) + literals::one_exact<T>); // increasing the values of factorial by two
 				cur_term  = x_pow;
-				cur_term.divide_vector(factorial, max_error_exponent, upper);
+                if (term_number_int % 2 == 0) {
+				    cur_term.divide_vector(factorial, max_error_exponent, upper);
+                }
+                else {
+                    // as we are subtracting next, !upper is passed
+                    cur_term.divide_vector(factorial, max_error_exponent, upper);
+                }
                 
                 result = result.up_to(max_error_exponent, upper);
                 factorial = factorial.up_to(max_error_exponent, upper);
@@ -356,8 +365,14 @@ namespace boost{
 				}
 				cur_power *= square_x;
 				cur_term = cur_power;
-				cur_term.divide_vector(factorial, max_error_exponent, upper);
-				++ term_number_int;
+                ++ term_number_int;
+                if (term_number_int % 2 == 0) {
+				    cur_term.divide_vector(factorial, max_error_exponent, upper);
+                }
+                else {
+                    // as we are subtracting next, !upper is passed
+                    cur_term.divide_vector(factorial, max_error_exponent, !upper);
+                }
 				term_number = term_number + literals::one_exact<T>;
 
 				result.up_to(max_error_exponent, upper);
@@ -434,13 +449,25 @@ namespace boost{
 				factorial *= factorial_number;
 				cur_power *= x;
 				cur_cos_term = cur_power;
-				cur_cos_term.divide_vector(factorial, max_error_exponent, upper);
+                if (term_number_int % 2 == 0) {
+				    cur_cos_term.divide_vector(factorial, max_error_exponent, upper);
+                }
+                else {
+                    // as we are subtracting next, !upper is passed
+                    cur_cos_term.divide_vector(factorial, max_error_exponent, !upper);
+                }
 
 				factorial_number = factorial_number + literals::one_exact<T>;
 				factorial *= factorial_number;
 				cur_power *= x;
 				cur_sin_term = cur_power;
-				cur_sin_term.divide_vector(factorial, max_error_exponent, upper);
+				if (term_number_int % 2 == 0) {
+				    cur_sin_term.divide_vector(factorial, max_error_exponent, upper);
+                }
+                else {
+                    // as we are subtracting next, !upper is passed
+                    cur_sin_term.divide_vector(factorial, max_error_exponent, !upper);
+                }
 			}while( (cur_cos_term.abs() > max_error) || (cur_sin_term.abs() > max_error) );
 
 			return std::make_tuple(sin_result, cos_result);
@@ -576,7 +603,13 @@ namespace boost{
 				x_pow *= x_square; // increasing power by two powers of original x
 				denominator += two;
 				cur_term  = x_pow;
-				cur_term.divide_vector(denominator, max_error_exponent, upper);
+                if (term_number_int % 2 == 0) {
+				    cur_term.divide_vector(denominator, max_error_exponent, upper);
+                }
+                else {
+                    // as we are subtracting next, !upper is passed
+                    cur_term.divide_vector(denominator, max_error_exponent, !upper);
+                }
                 
                 result = result.up_to(max_error_exponent, upper);
                 x_pow = x_pow.up_to(max_error_exponent, upper);
@@ -648,7 +681,7 @@ namespace boost{
                 // acot(x) = pi/2 - atan(x)
                 exact_number<T> result = pi<T>.get(max_error_exponent, upper);
                 result.divide_vector(two, max_error_exponent, upper);
-                result = result - tan_inverse(x, max_error_exponent, upper);
+                result = result - tan_inverse(x, max_error_exponent, !upper);
                 result = result.up_to(max_error_exponent, upper);
                 return result;
             }
@@ -689,7 +722,7 @@ namespace boost{
             // asin(x) = atan(x / sqrt(1 - x * x))
             static exact_number<T> one("1");
             exact_number<T> x_tan = x;
-            x_tan.divide_vector(square_root(one - x * x, max_error_exponent, upper), max_error_exponent, upper);
+            x_tan.divide_vector(square_root(one - x * x, max_error_exponent, !upper), max_error_exponent, upper);
             return tan_inverse(x_tan, max_error_exponent, upper);
         }
 
@@ -713,7 +746,7 @@ namespace boost{
             // acos(x) = pi/2 - asin(x)
             exact_number<T> result = pi<T>.get(max_error_exponent, upper);
             result.divide_vector(two, max_error_exponent, upper);
-            result = result - sin_inverse(x, max_error_exponent, upper);
+            result = result - sin_inverse(x, max_error_exponent, !upper);
             result = result.up_to(max_error_exponent, upper);
             return result;
         }

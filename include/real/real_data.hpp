@@ -953,6 +953,269 @@ namespace boost {
                     break;
                 }
 
+                case OPERATION::ASIN :{
+                    // If upper bound < -1 or lower bound > 1, then the number is out of domain
+                    if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) > literals::one_exact<T> 
+                        || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) < literals::minus_one_exact<T>) {
+                        throw max_precision_for_inverse_trigonometric_function_error();
+                    }
+
+                    // If lower_bound < -1 or upper_bound > 1, we iterate for more precise input
+                    while(true) {
+                        if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) < literals::minus_one_exact<T> 
+                            || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) > literals::one_exact<T>) {
+                            if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                throw max_precision_for_inverse_trigonometric_function_error();
+                            }
+                            ro.get_lhs_itr().iterate_n_times(1);
+                            ++_precision;
+                        }
+                        else break;
+                    }
+
+                    // asin is an increasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        sin_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        sin_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ACOS :{
+                    // If upper bound < -1 or lower bound > 1, then the number is out of domain
+                    if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) > literals::one_exact<T> 
+                        || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) < literals::minus_one_exact<T>) {
+                        throw max_precision_for_inverse_trigonometric_function_error();
+                    }
+
+                    // If lower_bound < -1 or upper_bound > 1, we iterate for more precise input
+                    while(true) {
+                        if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) < literals::minus_one_exact<T> 
+                            || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) > literals::one_exact<T>) {
+                            if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                throw max_precision_for_inverse_trigonometric_function_error();
+                            }
+                            ro.get_lhs_itr().iterate_n_times(1);
+                            ++_precision;
+                        }
+                        else break;
+                    }
+
+                    // acos is a decreasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        cos_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        cos_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ATAN :{
+                    // atan is an increasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        tan_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        tan_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ACOT :{
+                    // acot is a decreasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        cot_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        cot_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ASEC :{
+                    // If -1 < lower_bound < upper_bound < 1, then the number is out of domain
+                    if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) > literals::minus_one_exact<T> 
+                        && ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) < literals::one_exact<T>) {
+                        throw max_precision_for_inverse_trigonometric_function_error();
+                    }
+
+                    // We iterate for more precise input till lower_bound >= 1 or upper_bound <= -1
+                    while(true) {
+                        if (!(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) >= literals::one_exact<T> 
+                            || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) <= literals::minus_one_exact<T>)) {
+                            if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                throw max_precision_for_inverse_trigonometric_function_error();
+                            }
+                            ro.get_lhs_itr().iterate_n_times(1);
+                            ++_precision;
+                        }
+                        else break;
+                    }
+
+                    // asec is an increasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        sec_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        sec_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ACOSEC :{
+                    // If -1 < lower_bound < upper_bound < 1, then the number is out of domain
+                    if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) > literals::minus_one_exact<T> 
+                        && ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) < literals::one_exact<T>) {
+                        throw max_precision_for_inverse_trigonometric_function_error();
+                    }
+
+                    // We iterate for more precise input till lower_bound >= 1 or upper_bound <= -1
+                    while(true) {
+                        if (!(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) >= literals::one_exact<T> 
+                            || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) <= literals::minus_one_exact<T>)) {
+                            if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                throw max_precision_for_inverse_trigonometric_function_error();
+                            }
+                            ro.get_lhs_itr().iterate_n_times(1);
+                            ++_precision;
+                        }
+                        else break;
+                    }
+
+                    // acosec is a decreasing function in its domain
+                    this->_approximation_interval.lower_bound = 
+                        cosec_inverse(ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true), _precision, false);
+                    this->_approximation_interval.upper_bound = 
+                        cosec_inverse(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false), _precision, true);
+                    break;
+                }
+
+                case OPERATION::ATAN2 :{
+                    // If 0 lies in both lhs and rhs intervals, we iterate for more precise inputs
+                    if (!(ro.get_lhs_itr().get_interval().positive() || ro.get_lhs_itr().get_interval().negative()) 
+                        && !(ro.get_rhs_itr().get_interval().positive() || ro.get_rhs_itr().get_interval().negative())) {
+                        
+                        int flag = 0;
+                        while(true) {
+                            if (!(ro.get_lhs_itr().get_interval().positive() || ro.get_lhs_itr().get_interval().negative())) {
+                                if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                    flag++;
+                                }
+                                ro.get_lhs_itr().iterate_n_times(1);
+                                ++_precision;
+                            }
+                            else break;
+                        }
+
+                        while(true) {
+                            if (!(ro.get_rhs_itr().get_interval().positive() || ro.get_rhs_itr().get_interval().negative())) {
+                                if (_precision >= ro.get_rhs_itr().maximum_precision()) {
+                                    flag++;
+                                }
+                                ro.get_rhs_itr().iterate_n_times(1);
+                                ++_precision;
+                            }
+                            else break;
+                        }
+
+                        // After going to max precision, if still 0 lies in both lhs and rhs intervals, throw error 
+                        if (flag == 2) {
+                            throw max_precision_for_inverse_trigonometric_function_error();
+                        }
+                    }
+
+                    if (ro.get_rhs_itr().get_interval().positive()) {
+                        // if x > 0, atan2 is continuous
+                        exact_number<T> numerator;
+                        exact_number<T> denominator;
+                        bool deviation_upper_boundary, deviation_lower_boundary;
+                        
+                        // Upper Boundary
+                        if (!ro.get_lhs_itr().get_interval().negative()) {
+                            deviation_upper_boundary = true;
+                            numerator = ro.get_lhs_itr().get_interval().upper_bound;
+                            denominator = ro.get_rhs_itr().get_interval().lower_bound;
+                        } else {
+                            deviation_upper_boundary = false;
+                            numerator = ro.get_lhs_itr().get_interval().upper_bound;
+                            denominator = ro.get_rhs_itr().get_interval().upper_bound;
+                        }
+                        this->_approximation_interval.upper_bound = tan2_inverse(numerator, denominator, _precision, deviation_upper_boundary);
+
+                        // Lower Boundary
+                        if (ro.get_lhs_itr().get_interval().positive()) {
+                            deviation_lower_boundary = false;
+                            numerator = ro.get_lhs_itr().get_interval().lower_bound;
+                            denominator = ro.get_rhs_itr().get_interval().upper_bound; 
+                        } else {
+                            deviation_lower_boundary = true;
+                            numerator = ro.get_lhs_itr().get_interval().lower_bound;
+                            denominator = ro.get_rhs_itr().get_interval().lower_bound;
+                        } 
+                        this->_approximation_interval.lower_bound = tan2_inverse(numerator, denominator, _precision, deviation_lower_boundary);
+                    }
+                    else {
+                        // x < 0, atan2 is dicontinuous along negative x-axis
+
+                        // We iterate for more precise lhs until lhs >= 0 or lhs < 0 
+                        while(true) {
+                            if (!(ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) >= literals::zero_exact<T>
+                                || ro.get_lhs_itr().get_interval().upper_bound.up_to(_precision, true) < literals::zero_exact<T>)) {
+                                if (_precision >= ro.get_lhs_itr().maximum_precision()) {
+                                    throw max_precision_for_inverse_trigonometric_function_error();
+                                }
+                                ro.get_lhs_itr().iterate_n_times(1);
+                                ++_precision;
+                            }
+                            else break;
+                        }
+
+                        exact_number<T> numerator;
+                        exact_number<T> denominator;
+                        bool deviation_upper_boundary, deviation_lower_boundary;
+
+                        if (ro.get_lhs_itr().get_interval().lower_bound.up_to(_precision, false) >= literals::zero_exact<T>) {
+                            // if lhs >= 0
+
+                            // Upper Boundary
+                            deviation_upper_boundary = false;
+                            numerator = ro.get_lhs_itr().get_interval().lower_bound;
+                            denominator = ro.get_rhs_itr().get_interval().lower_bound;
+                            this->_approximation_interval.upper_bound = tan2_inverse(numerator, denominator, _precision, deviation_upper_boundary);
+
+                            // Lower Boundary
+                            if (ro.get_rhs_itr().get_interval().negative()) {
+                                deviation_lower_boundary = true;
+                                numerator = ro.get_lhs_itr().get_interval().upper_bound;
+                                denominator = ro.get_rhs_itr().get_interval().upper_bound;
+                                this->_approximation_interval.lower_bound = tan2_inverse(numerator, denominator, _precision, deviation_lower_boundary);
+                            } else {
+                                deviation_lower_boundary = true;
+                                numerator = ro.get_lhs_itr().get_interval().lower_bound;
+                                denominator = ro.get_rhs_itr().get_interval().upper_bound;
+                                this->_approximation_interval.lower_bound = tan2_inverse(numerator, denominator, _precision, deviation_lower_boundary);
+                            }
+                        } 
+                        else {
+                            // if lhs < 0
+
+                            // Upper Boundary
+                            if (ro.get_rhs_itr().get_interval().negative()) {
+                                deviation_upper_boundary = true;
+                                numerator = ro.get_lhs_itr().get_interval().lower_bound;
+                                denominator = ro.get_rhs_itr().get_interval().upper_bound;
+                                this->_approximation_interval.upper_bound = tan2_inverse(numerator, denominator, _precision, deviation_upper_boundary);
+                            } else {
+                                deviation_upper_boundary = true;
+                                numerator = ro.get_lhs_itr().get_interval().upper_bound;
+                                denominator = ro.get_rhs_itr().get_interval().upper_bound;
+                                this->_approximation_interval.upper_bound = tan2_inverse(numerator, denominator, _precision, deviation_upper_boundary);
+                            }
+
+                            // Lower Boundary
+                            deviation_lower_boundary = false;
+                            numerator = ro.get_lhs_itr().get_interval().upper_bound;
+                            denominator = ro.get_rhs_itr().get_interval().lower_bound;
+                            this->_approximation_interval.lower_bound = tan2_inverse(numerator, denominator, _precision, deviation_lower_boundary);
+                        }
+                    }
+
+                    break;
+                }
+
                 default:
                     throw boost::real::none_operation_exception();
             }

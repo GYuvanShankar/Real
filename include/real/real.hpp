@@ -1119,6 +1119,91 @@ namespace boost {
                 return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::COSEC));
             }
 
+            /**
+             *      ASIN METHOD 
+             * @brief: Calculates asin(real_num)
+             * @params: real_num: boost::real number whose asin is to be calculated.
+             * @return: returns a new boost::real which is asin(real_num)
+             * @author: Divyam Singal
+             **/
+            static real asin(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ASIN));
+            }
+
+            /**
+             *      ACOS METHOD 
+             * @brief: Calculates acos(real_num)
+             * @params: real_num: boost::real number whose acos is to be calculated.
+             * @return: returns a new boost::real which is acos(real_num)
+             * @author: Divyam Singal
+             **/
+            static real acos(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ACOS));
+            }
+
+            /**
+             *      ATAN METHOD 
+             * @brief: Calculates atan(real_num)
+             * @params: real_num: boost::real number whose atan is to be calculated.
+             * @return: returns a new boost::real which is atan(real_num)
+             * @author: Divyam Singal
+             **/
+            static real atan(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ATAN));
+            }
+
+            /**
+             *      ACOT METHOD 
+             * @brief: Calculates acot(real_num)
+             * @params: real_num: boost::real number whose acot is to be calculated.
+             * @return: returns a new boost::real which is acot(real_num)
+             * @author: Divyam Singal
+             **/
+            static real acot(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ACOT));
+            }
+
+            /**
+             *      ASEC METHOD 
+             * @brief: Calculates asec(real_num)
+             * @params: real_num: boost::real number whose asec is to be calculated.
+             * @return: returns a new boost::real which is asec(real_num)
+             * @author: Divyam Singal
+             **/
+            static real asec(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ASEC));
+            }
+
+            /**
+             *      ACOSEC METHOD 
+             * @brief: Calculates acosec(real_num)
+             * @params: real_num: boost::real number whose acosec is to be calculated.
+             * @return: returns a new boost::real which is acosec(real_num)
+             * @author: Divyam Singal
+             **/
+            static real acosec(real<T> real_num){
+                static real<T> zero("0");
+                return real(real_operation<T>(real_num._real_p, zero._real_p, OPERATION::ACOSEC));
+            }
+
+            /**
+             *      ATAN2 METHOD 
+             * @brief: Calculates atan2(y, x) defined as the angle in the Euclidean plane, 
+             * between the positive x axis and the ray to the point (x, y) ≠ (0, 0).
+             * @params: y: y-coordinate of the point
+             * @params: x: x-coordinate of the point
+             * @return: returns a new boost::real which is atan2(y, x)
+             * @author: Divyam Singal
+             **/
+            static real atan2(real<T> y, real<T> x){
+                return real(real_operation<T>(y._real_p, x._real_p, OPERATION::ATAN2));
+            }
+
 
             /**
              * @brief Sets this real_data to that of the operation between this previous
