@@ -256,7 +256,7 @@ TEST_CASE("Irrationals") {
 
         real champernowne = boost::real::irrational::CHAMPERNOWNE_BINARY<int>;
 
-        SECTION("digit check") {
+        SECTION("Digit check") {
             // matching starting few digits with hardcoded values
             std::string hardcoded_champernowne("0.862240125868054571557790283249394578565764742768299094516071214557306740590516458042");
             champernowne.get_real_itr().set_maximum_precision(25);
@@ -265,6 +265,23 @@ TEST_CASE("Irrationals") {
 
             for (int i=0; i<(int)hardcoded_champernowne.size(); ++i) {
                 CHECK(real_champernowne[i] == hardcoded_champernowne[i]);
+            }
+        }
+    }
+
+    SECTION("Golden Ratio") {
+
+        real golden_ratio = boost::real::irrational::GOLDEN_RATIO<int>;
+
+        SECTION("Digit check") {
+            // matching starting few digits with hardcoded values
+            std::string hardcoded_golden_ratio("1.6180339887498948482045868343656381177203091798057628621354486227052604628189024");
+            golden_ratio.get_real_itr().set_maximum_precision(25);
+            auto golden_ratio_itr = golden_ratio.get_real_itr().cend();
+            std::string real_golden_ratio = golden_ratio_itr.get_interval().upper_bound.as_string();
+
+            for (int i=0; i<(int)hardcoded_golden_ratio.size(); ++i) {
+                CHECK(real_golden_ratio[i] == hardcoded_golden_ratio[i]);
             }
         }
     }
