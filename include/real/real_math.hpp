@@ -201,17 +201,8 @@ namespace boost{
                 return literals::zero_exact<T>;
             }
             
-            // initial guess using scalar estimate
-            exact_number<T> result;
-            if(x.exponent%2==0)
-            {
-                if(x.digits[0]>=1)
-                    result=exact_number<T> (std::vector<T> {6}, (x.exponent)/2, true);
-                else
-                    result=exact_number<T> (std::vector<T> {2}, (x.exponent)/2, true);
-            }
-            else
-                result=exact_number<T>(std::vector<T> {2}, (x.exponent-1)/2, true);
+            // initial guess
+            exact_number<T> result(x.digits, (x.exponent + 1)/2, true);
 
             exact_number<T> error;
             exact_number<T> max_error(std::vector<T> {1}, -max_error_exponent, true);
@@ -369,9 +360,7 @@ namespace boost{
 				else 
 					result -= cur_term;
 				
-				for(exact_number<T> i = (two * term_number) + literals::one_exact<T> ; i <= two * (term_number + literals::one_exact<T>); i = i + literals::one_exact<T>){
-					factorial *= i;
-				}
+				factorial *=((two * term_number) + literals::one_exact<T>)*(two * (term_number + literals::one_exact<T>));
 				cur_power *= square_x;
 				cur_term = cur_power;
                 ++ term_number_int;
