@@ -359,7 +359,9 @@ namespace boost{
                     result += cur_term;
                 else
                     result -= cur_term;
-                    factorial *= ((two * term_number) + literals::one_exact<T>)* (two * (term_number + literals::one_exact<T>));
+
+                for(exact_number<T> i = (two * term_number) + literals::one_exact<T> ; i <= two * (term_number + literals::one_exact<T>); i = i + literals::one_exact<T>){
+                    factorial *= i;
                 }
                 cur_power *= square_x;
                 cur_term = cur_power;
